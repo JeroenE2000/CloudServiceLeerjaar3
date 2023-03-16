@@ -16,14 +16,16 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const adminMiddleware = (req, res, next) => {
-  if (req.user.role === "admin") {
-    next();
-  } else {
-    res.status(403).send(`Access denied for user with role: ${req.user.role}`);
-  }
-}; 
+const checkRole = (role) => {
+  return (req, res, next) => {
+    if (req.user.role === role) {
+      next();
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
+  };
+}
 
 module.exports = {
-  adminMiddleware, authMiddleware
+  authMiddleware, checkRole
 };
