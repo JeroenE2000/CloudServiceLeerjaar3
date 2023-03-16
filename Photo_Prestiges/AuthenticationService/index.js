@@ -15,22 +15,6 @@ var ExtractJwt = passportJWT.ExtractJwt;
 
 var jwtOptions = { jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), secretOrKey:  process.env.JWT_SECRET };
 
-const strategy = new JwtStrategy(jwtOptions, (payload, done) => {
-    const authservice = new AuthService();
-    authservice.getExistingPayload(payload)
-    .then((value) => {
-        if(!value) {
-            return done(null, false)
-        }
-        if(value) {
-            return done(null, value)
-        }
-    })
-    .catch((e) => {
-        return done(e, false)
-    })
-})
-passport.use(strategy);
 
 app.use(express.json());
 
