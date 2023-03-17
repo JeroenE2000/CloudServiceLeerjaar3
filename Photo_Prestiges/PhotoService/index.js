@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const app = express();
+require('dotenv').config();
 const port = process.env.PHOTO_SERVICE_PORT || 3012;
-const { authMiddleware , checkRole  } = require('../Middleware/roles');
 
 require('./mongooseconnection');
 
@@ -11,9 +11,9 @@ const db = mongoose.connection;
 app.use(express.json());
 
 // make a GET request to the database to get all the targets
-app.get('/targets', authMiddleware, checkRole("admin"), async function(req, res, next) {
+app.get('/targets', async function(req, res, next) {
     let target = await db.collection('targets').find().toArray();
-    res.json(target);
+    res.json({message: "success", data: target});
 });
 
 //make a post request to the database to add a target
