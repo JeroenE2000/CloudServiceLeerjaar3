@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const targetSchema = new mongoose.Schema({
-    id: {
+    mid: {
       type: Number,
       required: true,
     },
@@ -36,7 +36,11 @@ const targetSchema = new mongoose.Schema({
           default: Date.now
         }
       }
-    ]
+    ],
+    image: {
+      data: Buffer,
+      contentType: String,
+    },
   });
 
 mongoose.model('target', targetSchema);

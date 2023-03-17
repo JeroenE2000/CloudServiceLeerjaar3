@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 
 var uploadSchema = new mongoose.Schema({
-  id: {
+  uid: {
     type: Number,
     required: true,
   },
