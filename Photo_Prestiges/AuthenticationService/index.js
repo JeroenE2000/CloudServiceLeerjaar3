@@ -7,6 +7,7 @@ var passportJWT = require("passport-jwt");
 const JwtStrategy = require('passport-jwt').Strategy;
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const User = require('./Models/User');
 const db = mongoose.connection;
 
 require('./mongooseconnection');
@@ -20,14 +21,14 @@ app.use(express.json());
 
 app.post('/login', async function(req, res) {
     const { username, password } = req.body;
-    let user = await db.collection('users');
+    let findUser = await User.findOne({username: username})
 
-    if(user.findOne({username, password})) {
-        var payload = {uid: user.uid, username: user.username};
-        var authToken = jwt.sign(payload, jwtOptions.secretOrKey);
+    if(findUser != null && await bcrypt.compare(password, findUser.password)) {
+        var payload = {uid: findUser.uid, username: findUser.username, role: findUser.role};
+        var authToken = jwt.sign(payload, jwtOptions.secretOrKey, {expiresIn: 60 * 60 * 24});
         res.json({message: "ok", token: authToken});
     } else {
-        res.status(401).json({message:"username or password is incorrect"});
+         res.status(401).json({message: "Username or password is incorrect"});
     }
 });
 

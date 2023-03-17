@@ -18,6 +18,7 @@ const authMiddleware = (req, res, next) => {
 
 const checkRole = (role) => {
   return (req, res, next) => {
+    console.log({message: req.user});
     if (req.user.role === role) {
       next();
     } else {
