@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
 const axios = require('axios');
@@ -19,10 +18,14 @@ app.use(express.json());
 
 // PhotoService
 // Map endpoints to microservices
-//authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route :D
+//authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route vergeet niet een header mee te sturen met de request
 app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
     try {
-        const response = await axios.get(photoService + '/targets');
+        const response = await axios.get(photoService + '/targets', {
+          headers: {
+            authorization: req.headers.authorization // pass the bearer token received from the client request to the microservice
+          }
+        });
         res.json(response.data);
     } catch (error) {
         console.error(error);
