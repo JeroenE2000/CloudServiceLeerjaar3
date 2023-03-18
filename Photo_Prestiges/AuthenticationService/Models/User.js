@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    uploadids: [
+        {
+          type: Number,
+        }
+      ]
 });
 
 mongoose.model('User', userSchema);

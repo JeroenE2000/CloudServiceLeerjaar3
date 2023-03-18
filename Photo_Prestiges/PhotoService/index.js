@@ -4,6 +4,9 @@ const { authMiddleware } = require('../Middleware/roles');
 const app = express();
 require('dotenv').config();
 const port = process.env.PHOTO_SERVICE_PORT || 3012;
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
+
+let data;
 
 require('./mongooseconnection');
 
@@ -19,10 +22,24 @@ app.get('/targets', authMiddleware, async function(req, res, next) {
 
 //make a post request to the database to add a target
 app.post('/targets', async function(req, res, next) {
-    let target = await db.collection('targets').insertOne(req.body);
-    res.json(target);
+    try {
+        data = req.body;
+        await sendMessageToQueue('targetQueue', JSON.stringify(req.body));
+        res.json({message: "success"});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message: "something went wrong", data: error})
+    }
 });
+
+
+
   
-app.listen(port, () => {
+app.listen(port, async() => {
     console.log('Server is up on port ' + port);
+
+    await connectToRabbitMQ();
+    await consumeFromQueue("targetQueue", "targets", async (data, dbname) => {
+        await mongoose.connection.collection(dbname).insertOne(data);
+    });
 });

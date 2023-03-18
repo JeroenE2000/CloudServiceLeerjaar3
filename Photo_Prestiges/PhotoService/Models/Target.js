@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const targetSchema = new mongoose.Schema({
-    mid: {
+    tid: {
       type: Number,
       required: true,
     },
@@ -25,7 +25,6 @@ const targetSchema = new mongoose.Schema({
         user: {
           type: String,
           required: true,
-          unique: true
         },
         score: {
           type: Number,
