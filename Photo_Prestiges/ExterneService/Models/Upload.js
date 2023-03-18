@@ -13,11 +13,10 @@ var uploadSchema = new mongoose.Schema({
     image: {
       data: Buffer,
       contentType: String,
-      required: true
     },
     userid: {
       type: Number,
-      required: true,
+      required: true
     }
   },
 });

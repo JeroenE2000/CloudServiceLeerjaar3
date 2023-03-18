@@ -27,8 +27,7 @@ const targetSchema = new mongoose.Schema({
     image: {
       data: Buffer,
       contentType: String,
-      required: true
     },
   });
 
-mongoose.model('target', targetSchema);
+mongoose.model('Target', targetSchema);

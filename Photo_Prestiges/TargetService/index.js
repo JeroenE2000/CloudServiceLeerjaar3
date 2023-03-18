@@ -3,6 +3,18 @@ const mongoose = require('mongoose');
 const { authMiddleware } = require('../Middleware/roles');
 const app = express();
 require('dotenv').config();
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads/')
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname)
+    }
+});
+const upload = multer({ storage: storage });
+
+var bodyParser = require('body-parser');
 const port = process.env.TARGET_SERVICE_PORT || 3012;
 const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 
@@ -12,18 +24,32 @@ require('./mongooseconnection');
 
 const db = mongoose.connection;
 
-app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // make a GET request to the database to get all the targets
-app.get('/targets', authMiddleware, async function(req, res, next) {
+app.get('/targets', authMiddleware, async function(req, res) {
     let target = await db.collection('targets').find().toArray();
     res.json({message: "success", data: target});
 });
 
 //make a post request to the database to add a target
-app.post('/targets', async function(req, res, next) {
+app.post('/targets', upload.single('image'), async function(req, res) {
     try {
-        data = req.body;
+        const buffer = req.file.path;
+        data = {
+            tid: req.body.tid,
+            targetName: req.body.targetName,
+            description: req.body.description,
+            location: {
+              coordinates: [req.body.longitude, req.body.latitude],
+              placename: req.body.placename
+            },
+            image: {
+              data: buffer,
+              contentType: req.file.mimetype
+            }
+        };
         await sendMessageToQueue('targetQueue', JSON.stringify(req.body));
         res.json({message: "success"});
     } catch (error) {
@@ -32,14 +58,16 @@ app.post('/targets', async function(req, res, next) {
     }
 });
 
-
-
   
 app.listen(port, async() => {
     console.log('Server is up on port ' + port);
-
-    await connectToRabbitMQ();
-    await consumeFromQueue("targetQueue", "targets", async (data, dbname) => {
-        await mongoose.connection.collection(dbname).insertOne(data);
-    });
+    if(await connectToRabbitMQ() == false) {
+        console.log("RabbitMQ is not connected");
+    } 
+    else {
+        await connectToRabbitMQ();
+        await consumeFromQueue("targetQueue", "targets", async (data, dbname) => {
+            await mongoose.connection.collection(dbname).insertOne(data);
+        });
+    }   
 });

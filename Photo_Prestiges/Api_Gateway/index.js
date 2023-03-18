@@ -5,6 +5,8 @@ const axios = require('axios');
 const { authMiddleware, checkRole } = require('../Middleware/roles');
 // is nodig om de .env file te kunnen gebruiken
 require('dotenv').config();
+const bodyParser = require('body-parser');
+
 //PORT api_gateway waar hij op draait
 const port = process.env.MICROSERVICE_BASE_PORT || 3016;
 
@@ -14,7 +16,7 @@ const scoreService = process.env.SCORE_SERVICE_URL || 'http://localhost:3013';
 const externalService = process.env.EXTERNAL_SERVICE_URL || 'http://localhost:3014';
 const authenticationService = process.env.AUTHENTICATION_SERVICE_URL || 'http://localhost:3015';
 
-app.use(express.json());
+app.use(bodyParser.json());
 
 // targetService
 // Map endpoints to microservices
