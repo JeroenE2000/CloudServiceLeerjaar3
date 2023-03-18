@@ -6,7 +6,6 @@ const port = process.env.AUTHENTICATION_SERVICE_PORT || 3015;
 var jwt = require('jsonwebtoken');
 
 var passportJWT = require("passport-jwt");
-const JwtStrategy = require('passport-jwt').Strategy;
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('./Models/User');
