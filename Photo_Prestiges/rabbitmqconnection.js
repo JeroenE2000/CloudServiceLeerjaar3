@@ -1,9 +1,7 @@
 const amqp = require('amqplib');
+require('dotenv').config();
 const uri = 'amqp://127.0.0.1:5672';
 let rabbitmqconnection;
-const mongoose = require('mongoose');
-
-const db = mongoose.connection;
 
 async function connectToRabbitMQ() {
     try {

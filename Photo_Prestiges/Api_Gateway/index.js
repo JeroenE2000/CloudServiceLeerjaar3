@@ -9,19 +9,19 @@ require('dotenv').config();
 const port = process.env.MICROSERVICE_BASE_PORT || 3016;
 
 // Microservices connections
-const photoService = process.env.PHOTO_SERVICE_URL || 'http://localhost:3012';
-const userService = process.env.USER_SERVICE_URL || 'http://localhost:3013';
+const targetService = process.env.TARGET_SERVICE_URL || 'http://localhost:3012';
+const scoreService = process.env.SCORE_SERVICE_URL || 'http://localhost:3013';
 const externalService = process.env.EXTERNAL_SERVICE_URL || 'http://localhost:3014';
 const authenticationService = process.env.AUTHENTICATION_SERVICE_URL || 'http://localhost:3015';
 
 app.use(express.json());
 
-// PhotoService
+// targetService
 // Map endpoints to microservices
 //authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route vergeet niet een header mee te sturen met de request
 app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
     try {
-        const response = await axios.get(photoService + '/targets', {
+        const response = await axios.get(targetService + '/targets', {
           headers: {
             authorization: req.headers.authorization // pass the bearer token received from the client request to the microservice
           }
@@ -35,7 +35,7 @@ app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
   
 app.post('/targets', async (req, res) => {
     try {
-      const response = await axios.post(photoService + '/targets', req.body);
+      const response = await axios.post(targetService + '/targets', req.body);
       res.json(response.data);
     } catch (error) {
       console.error(error);

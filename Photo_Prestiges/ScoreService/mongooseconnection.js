@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');
 require('dotenv').config();
 //require deze model
-require('./Models/Target');
+require('./Models/Score');
 //get from config file
-mongoose.connect(process.env.PHOTOSERVICE_DB_CONNECTION);
+mongoose.connect(process.env.SCORESERVICE_DB_CONNECTION);

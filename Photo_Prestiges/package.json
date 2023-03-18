@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "concurrently \"node ./ExterneService/index.js\" \"node ./UserService/index.js\" \"node ./PhotoService/index.js\" \"node ./AuthenticationService/index.js\" \"node ./Api_Gateway/index.js\""
+    "start": "concurrently \"node ./ExterneService/index.js\" \"node ./ScoreService/index.js\" \"node ./TargetService/index.js\" \"node ./AuthenticationService/index.js\" \"node ./Api_Gateway/index.js\""
   },
   "dependencies": {
     "amqplib": "^0.10.3",

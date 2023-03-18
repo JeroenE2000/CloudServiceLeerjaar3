@@ -1,24 +1,20 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  uid: {
+  scoreId: {
     type: Number,
     required: true,
   },
-  username: {
-    type: String,
+  score: {
+    type: Number,
     required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
   },
   uploadids: [
     {
       type: Number,
+      required: true,
     }
   ]
 });
 
-mongoose.model('User', userSchema);
+mongoose.model('Score', userSchema);

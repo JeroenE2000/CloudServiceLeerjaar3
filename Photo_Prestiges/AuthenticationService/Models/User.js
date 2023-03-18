@@ -23,11 +23,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    uploadids: [
+    targetIDs: [
         {
           type: Number,
         }
-      ]
+    ]
 });
 
 mongoose.model('User', userSchema);

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { authMiddleware } = require('../Middleware/roles');
 const app = express();
 require('dotenv').config();
-const port = process.env.PHOTO_SERVICE_PORT || 3012;
+const port = process.env.TARGET_SERVICE_PORT || 3012;
 const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 
 let data;
