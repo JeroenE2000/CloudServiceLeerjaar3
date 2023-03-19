@@ -50,5 +50,5 @@ async function consumeFromQueue(queueName, dbname, callback) {
 }
 
 
-module.exports = { connectToRabbitMQ, sendMessageToQueue , consumeFromQueue };
+module.exports = { connectToRabbitMQ, sendMessageToQueue , consumeFromQueue , uri };
 

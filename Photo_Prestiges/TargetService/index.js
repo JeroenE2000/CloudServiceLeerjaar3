@@ -4,28 +4,21 @@ const { authMiddleware } = require('../Middleware/roles');
 const app = express();
 require('dotenv').config();
 const multer = require('multer');
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads/')
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname)
-    }
-});
-const upload = multer({ storage: storage });
+const upload = multer();
+const TargetModel = require('./Models/Target');
 
 var bodyParser = require('body-parser');
 const port = process.env.TARGET_SERVICE_PORT || 3012;
 const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 
-let data;
+let data , userdata;
 
 require('./mongooseconnection');
 
 const db = mongoose.connection;
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // make a GET request to the database to get all the targets
 app.get('/targets', authMiddleware, async function(req, res) {
@@ -34,11 +27,16 @@ app.get('/targets', authMiddleware, async function(req, res) {
 });
 
 //make a post request to the database to add a target
-app.post('/targets', upload.single('image'), async function(req, res) {
+app.post('/targets', authMiddleware, upload.single('image'), async function(req, res, next) {
     try {
         const buffer = req.file.path;
+        const targetCount = await db.collection('targets').find().sort({tid: -1}).limit(1).toArray();
+        let nextTargetId = 1;
+        if (targetCount.length > 0) {
+            nextTargetId = parseInt(targetCount[0].tid) + 1;
+        }
         data = {
-            tid: req.body.tid,
+            tid: nextTargetId,
             targetName: req.body.targetName,
             description: req.body.description,
             location: {
@@ -50,7 +48,12 @@ app.post('/targets', upload.single('image'), async function(req, res) {
               contentType: req.file.mimetype
             }
         };
-        await sendMessageToQueue('targetQueue', JSON.stringify(req.body));
+        userdata = {
+            uid: req.user.uid,
+            targetID: nextTargetId
+        }
+        await sendMessageToQueue('targetQueue', JSON.stringify(data));
+        await sendMessageToQueue('UserTargetQueue', JSON.stringify(userdata));
         res.json({message: "success"});
     } catch (error) {
         console.log(error);
@@ -67,7 +70,21 @@ app.listen(port, async() => {
     else {
         await connectToRabbitMQ();
         await consumeFromQueue("targetQueue", "targets", async (data, dbname) => {
+            upload.storage = multer.diskStorage({
+                destination: function (req, file, cb) {
+                    cb(null, './uploads/')
+                },
+                filename: function (req, file, cb) {
+                    cb(null, Date.now() + '-' + file.originalname)
+                }
+            });
             await mongoose.connection.collection(dbname).insertOne(data);
+        });
+
+        await consumeFromQueue('getTargetImageDataQueue', 'targets', async (data, dbname) => {
+            let tid = data.tid;
+            let imageData = await TargetModel.findOne({tid: tid});
+            await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(imageData));
         });
     }   
 });

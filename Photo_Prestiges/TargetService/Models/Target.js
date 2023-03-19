@@ -31,3 +31,5 @@ const targetSchema = new mongoose.Schema({
   });
 
 mongoose.model('Target', targetSchema);
+
+module.exports = mongoose.model('Target');
