@@ -30,7 +30,8 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 async function getImageData(targetId) {
     const message = {tid: targetId};
-    await sendMessageToQueue('getTargetImageDataQueue', Buffer.from(JSON.stringify(message)));
+    const routingKey = 'get_target_image_data';
+    await sendMessageToQueue('getTargetImageDataQueue', Buffer.from(JSON.stringify(message)), routingKey);
 }
 
 let targetId;
@@ -41,23 +42,18 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
         targetId = req.params.tid;
         getImageData(targetId);
 
-        await consumeFromQueue('imageDataResponseQueue', '', async (data, dbname) => {
+        await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
+            if(data == null) {
+                res.json({message: "target heeft geen image of bestaat niet of de targetId is niet correct of de targetId is niet meegegeven of de queue bestaat niet"});
+            }
             if(data.message == "no image found") {
                 res.json({message: "target heeft geen image of bestaat niet"});
             } else {
                 const uploadImage = req.file.path;
                 const targetImage = Buffer.from(data.image.data).toString('utf8');
                 const score = await compareImages(targetImage, uploadImage);
-                
-                if(typeof score === "number") {
-                    res.json({message: "success", score: score});
-                } else {
-                    res.json({message: "foto is exact hetzelfde als de target je hebt gecheat"});
-                }
+                res.json({message: "success", score: score});
             }
-           
-
-
             // const uploadCount = await db.collection('uploads').find().sort({uploadId: -1}).limit(1).toArray();
 
             // let nextUploadID = 1;
@@ -65,7 +61,6 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
             //     nextUploadID = parseInt(nextUploadID[0].uploadId) + 1;
             // }
             // res.json({message: "success"});
-
         });
     } catch (error) {
         console.log(error);
@@ -103,7 +98,7 @@ async function compareImages(targetImage, uploadImage) {
     };
     let targetResponse;
     let uploadResponse;
-    (async () => {
+    return (async () => {
         try {
             targetResponse = await axios(targetOptions);
             uploadResponse = await axios(uploadOptions);
@@ -116,7 +111,7 @@ async function compareImages(targetImage, uploadImage) {
             let numberOfMatchingTags = 0;
             let percentage = 0;
 
-            targetTags.forEach(targetTag => {
+            await targetTags.forEach(targetTag => {
                 const matchingUploadTag = uploadTags.find(uploadTag => uploadTag.tag.en === targetTag.tag.en)
                 if (matchingUploadTag) {
                     const targetConfidence = targetTag.confidence;
@@ -135,11 +130,7 @@ async function compareImages(targetImage, uploadImage) {
             }
               
             percentage = score.toFixed(2);
-            if(percentage == 100) {
-                return console.log("foto is exact hetzelfde als de target je hebt gecheat");
-            } else {
-                return percentage;
-            }
+            return percentage;
         } catch (error) {
             console.log(error);
         }
