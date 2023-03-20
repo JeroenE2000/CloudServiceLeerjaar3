@@ -66,6 +66,7 @@ app.listen(port, async() => {
     console.log('Server is up on port ' + port);
     if(await connectToRabbitMQ() == false) {
         console.log("RabbitMQ is not connected");
+        res.json({message: "RabbitMQ is not connected"});
     } 
     else {
         await connectToRabbitMQ();
@@ -84,6 +85,9 @@ app.listen(port, async() => {
         await consumeFromQueue('getTargetImageDataQueue', 'targets', async (data, dbname) => {
             let tid = data.tid;
             let imageData = await TargetModel.findOne({tid: tid});
+            if(imageData == null) {
+                imageData = {message: "no image found"};
+            }
             await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(imageData));
         });
     }   

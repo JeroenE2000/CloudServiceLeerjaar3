@@ -1,13 +1,13 @@
 const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 const { authMiddleware } = require('../Middleware/roles');
 require('./mongooseconnection');
+require('dotenv').config();
 var express = require('express');
-const fs = require('fs');
+var bodyParser = require('body-parser');
 let app = express();
+const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
-require('dotenv').config();
-var bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const upload = multer();
@@ -42,11 +42,21 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
         getImageData(targetId);
 
         await consumeFromQueue('imageDataResponseQueue', '', async (data, dbname) => {
-            const uploadImage = req.file.path;
-            const targetImage = Buffer.from(data.image.data).toString('utf8');
-            const score = await compareImages(targetImage, uploadImage);
+            if(data.message == "no image found") {
+                res.json({message: "target heeft geen image of bestaat niet"});
+            } else {
+                const uploadImage = req.file.path;
+                const targetImage = Buffer.from(data.image.data).toString('utf8');
+                const score = await compareImages(targetImage, uploadImage);
+                
+                if(typeof score === "number") {
+                    res.json({message: "success", score: score});
+                } else {
+                    res.json({message: "foto is exact hetzelfde als de target je hebt gecheat"});
+                }
+            }
+           
 
-            // console.log({message: "PLEASE WERK alsjblieft" , data: score});
 
             // const uploadCount = await db.collection('uploads').find().sort({uploadId: -1}).limit(1).toArray();
 
@@ -64,38 +74,77 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
 });
 
 async function compareImages(targetImage, uploadImage) {
-    const got = await import('got');
-    const formdata = new FormData();
-    const formdata2 = new FormData();
-    formdata.append('image', fs.createReadStream(targetImage))
-    formdata2.append('image', fs.createReadStream(uploadImage))
+    const targetFormdata = new FormData();
+    const uploadFormdata = new FormData();
+    targetFormdata.append('image', fs.createReadStream(targetImage))
+    uploadFormdata.append('image', fs.createReadStream(uploadImage))
 
     const api_key = "acc_e9bb2fe17869982";
     const api_secret = "b0249401a86f021a291f14b2d25e9390";
-    
+    const encoded = Buffer.from(api_key + ':' + api_secret, 'utf8').toString('base64')  // encode to base64
 
     const url = "https://api.imagga.com/v2/tags";
-    const url2 = "https://api.imagga.com/v2/tags";
-    const [response, response2] = await Promise.all([
-        axios.post(url, {body: formdata, username: api_key, password: api_secret }),
-        axios.post(url2, {body: formdata2, username: api_key, password: api_secret })
-    ]);
 
-    console.log({response: response, message: "als het goed is staat hier de response"})
-        // const targetTags = JSON.parse(response.body).result.tags;
-        // const uploadTags = JSON.parse(response2.body).result.tags;
+    const targetOptions = {
+        headers: {
+            'Authorization': 'Basic ' + encoded,
+        },
+        method: 'POST',
+        url: url,
+        data: targetFormdata,
+    };
+    const uploadOptions = {
+        headers: {
+            'Authorization': 'Basic ' + encoded,
+        },
+        method: 'POST',
+        url: url,
+        data: uploadFormdata,
+    };
+    let targetResponse;
+    let uploadResponse;
+    (async () => {
+        try {
+            targetResponse = await axios(targetOptions);
+            uploadResponse = await axios(uploadOptions);
 
-        // let score = 0;
-        // for (let i = 0; i < targetTags.length; i++) {
-        //     for (let j = 0; j < uploadTags.length; j++) {
-        //         if (targetTags[i].tag.en === uploadTags[j].tag.en) {
-        //             score += targetTags[i].confidence * uploadTags[j].confidence;
-        //         }
-        //     }
-        // }
-        // return score;
+            const targetTags = targetResponse.data.result.tags;
+            const uploadTags = uploadResponse.data.result.tags;
+            
+            let score = 0;
+            let totalPercentageDifference = 0;
+            let numberOfMatchingTags = 0;
+            let percentage = 0;
+
+            targetTags.forEach(targetTag => {
+                const matchingUploadTag = uploadTags.find(uploadTag => uploadTag.tag.en === targetTag.tag.en)
+                if (matchingUploadTag) {
+                    const targetConfidence = targetTag.confidence;
+                    const uploadConfidence = matchingUploadTag.confidence;
+                    const percentageDifference = Math.abs(targetConfidence - uploadConfidence) / targetConfidence * 100;
+                    totalPercentageDifference += percentageDifference;
+                    numberOfMatchingTags++;
+                }
+            });
+
+            if (numberOfMatchingTags > 0) {
+                score = 100 - totalPercentageDifference / numberOfMatchingTags;
+                percentage = Math.round(score * 100) / 100;
+            } else {
+                percentage = 0;
+            }
+              
+            percentage = score.toFixed(2);
+            if(percentage == 100) {
+                return console.log("foto is exact hetzelfde als de target je hebt gecheat");
+            } else {
+                return percentage;
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    })();
 }
-
 
 
 app.listen(port, async() => {
