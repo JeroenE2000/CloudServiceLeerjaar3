@@ -1,5 +1,6 @@
-const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('./rabbitmqconnection');
 const { authMiddleware } = require('../Middleware/roles');
+const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
 require('./mongooseconnection');
 require('dotenv').config();
 var express = require('express');
@@ -20,10 +21,6 @@ upload.storage = multer.diskStorage({
         cb(null, Date.now() + '-' + file.originalname)
     }
 });
-const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
-
-
-const db = mongoose.connection;
 
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
