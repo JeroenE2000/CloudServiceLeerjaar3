@@ -15,7 +15,7 @@ const targetSchema = new mongoose.Schema({
     },
     location: {
       coordinates: {
-        type: [Number],
+        type: [Number, Number],
         default: [0, 0],
         required: true
       },

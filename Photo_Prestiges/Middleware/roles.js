@@ -17,7 +17,18 @@ const authMiddleware = (req, res, next) => {
 };
 
 //APPARTE OPAQUE FUNCTION MAKEN
-
+const opaqueTokenCheck = (req, res, next) => {
+  const authHeader = req.headers.opaque_token;
+  if (authHeader) {
+    if(authHeader === process.env.OPAQUE_TOKEN) {
+      next();
+    } else {
+      res.status(401).send('Invalid token');
+    }
+  } else {
+    res.status(401).send('Token not found');
+  }
+};
 
 const checkRole = (role) => {
   return (req, res, next) => {
@@ -30,5 +41,5 @@ const checkRole = (role) => {
 }
 
 module.exports = {
-  authMiddleware, checkRole
+  authMiddleware, checkRole, opaqueTokenCheck
 };

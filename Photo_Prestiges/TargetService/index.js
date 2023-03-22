@@ -1,6 +1,7 @@
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue, sendMessageToDirectExchange, consumeFromDirectExchange} = require('../rabbitmqconnection');
 const express = require('express');
 const mongoose = require('mongoose');
-const { authMiddleware } = require('../Middleware/roles');
+const { opaqueTokenCheck } = require('../Middleware/roles');
 const app = express();
 require('dotenv').config();
 const multer = require('multer');
@@ -18,7 +19,6 @@ const TargetModel = require('./Models/Target');
 
 var bodyParser = require('body-parser');
 const port = process.env.TARGET_SERVICE_PORT || 3012;
-const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 
 let data , userdata;
 
@@ -30,13 +30,50 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // make a GET request to the database to get all the targets
-app.get('/targets', authMiddleware, async function(req, res) {
+app.get('/targets', opaqueTokenCheck, async function(req, res) {
     let target = await db.collection('targets').find().toArray();
     res.json({message: "success", data: target});
 });
 
+// Route to get all targets by city
+app.get('/targets/city/:city', opaqueTokenCheck, async function(req, res) {
+    let city = req.params.city;
+
+    //check if city is filled in
+    if(city == null) {
+        res.json({message: "city is not filled in"});
+    }
+    await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ city }), 'filter_by_city');
+
+    await consumeFromDirectExchange('targetFilterExchange', dbname, 'filter_by_city', async function(data, dbname) {
+        const result = await Target.find({ 'location.placename': data.city });
+        console.log('Received data from the direct exchange: ', result);
+        res.json({message: "success", data: result});
+    });
+});
+
+// Route to get all targets by coordinates
+app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req, res) {
+    let lat = req.params.lat;
+    let long = req.params.long;
+
+    //check if lat and long are villed in 
+    if(lat == null || long == null) {
+        res.json({message: "lat and long are not filled in"});
+    }
+
+    await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ lat, long }), 'filter_by_coordinates');
+    await consumeFromDirectExchange('targetFilterExchange', 'targets', 'filter_by_coordinates', async function(data, dbname) {
+        console.log(data.lat, data.long);
+        const result = await TargetModel.find({'location.coordinates': [(data.long), (data.lat)]});
+        console.log('Received data from the direct exchange: ', result);
+        res.json({message: "success", data: result});
+    });
+});
+
+
 //make a post request to the database to add a target
-app.post('/targets', authMiddleware, upload.single('image'), async function(req, res, next) {
+app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
         const buffer = req.file.path;
         const tid = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
@@ -53,8 +90,9 @@ app.post('/targets', authMiddleware, upload.single('image'), async function(req,
               contentType: req.file.mimetype
             }
         };
+        const userId = req.headers['user_id']; 
         userdata = {
-            uid: req.user.uid,
+            uid: userId,
             targetID: tid
         }
         await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');

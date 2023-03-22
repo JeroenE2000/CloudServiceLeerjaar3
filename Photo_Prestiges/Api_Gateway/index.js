@@ -23,14 +23,14 @@ const authenticationService = process.env.AUTHENTICATION_SERVICE_URL || 'http://
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-// targetService
-// Map endpoints to microservices
+
+// ----------------- TargetService Beginning -----------------
 //authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route vergeet niet een header mee te sturen met de request
 app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
     try {
         const response = await axios.get(targetService + '/targets', {
           headers: {
-            authorization: req.headers.authorization // pass the bearer token received from the client request to the microservice
+            opaque_token: process.env.OPAQUE_TOKEN //pass the opaque token to the target service
           }
         });
         res.json(response.data);
@@ -40,9 +40,8 @@ app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
     }
 });
   
-app.post('/targets', upload.single('image'), async (req, res) => {
+app.post('/targets', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-      
       //formdata aanmaken anders kan de image niet worden meegegeven
       const form = new FormData();
       form.append('tid', req.body.tid);
@@ -59,7 +58,8 @@ app.post('/targets', upload.single('image'), async (req, res) => {
       //formdata meegeven aan de post request
       const response = await axios.post(targetService + '/targets', form, {
         headers: {
-          authorization: req.headers.authorization // pass the bearer token received from the client request to the microservice
+          opaque_token: process.env.OPAQUE_TOKEN,
+          user_id: req.user.uid
         }
       });
       res.json(response.data);
@@ -69,8 +69,38 @@ app.post('/targets', upload.single('image'), async (req, res) => {
     }
 });
 
+app.get('/targets/coordinates/:lat/:long', authMiddleware, async function(req, res) {
+    try {
+        const response = await axios.get(targetService + '/targets/coordinates/' + req.params.lat + '/' + req.params.long, {
+            headers: {
+              opaque_token: process.env.OPAQUE_TOKEN
+            }
+        });
+        res.json(response.data);
+    } catch(error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
 
-// ----------------- ExterneService -----------------
+app.get('/targets/city/:city', authMiddleware, async function(req, res) {
+    try {
+        const response = await axios.get(targetService + '/targets/city/' + req.params.city, {
+            headers: {
+              opaque_token: process.env.OPAQUE_TOKEN
+            }
+        });
+        res.json(response.data);
+    } catch(error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// ----------------- TargetService Ending -----------------
+
+
+// ----------------- ExterneService Begining -----------------
 app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async function(req, res, next) {
     try {
       const form = new FormData();
@@ -80,7 +110,8 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
       });
       const response = await axios.post(externalService + '/compareUpload/' + req.params.tid, form, {
         headers: {
-          authorization: req.headers.authorization // pass the bearer token received from the client request to the microservice
+          opaque_token: process.env.OPAQUE_TOKEN,
+          user_id: req.user.uid
         }
       });
       res.json(response.data);
@@ -89,10 +120,11 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
       res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+// ----------------- ExterneService Ending -----------------
 
 
 
-  
+// ----------------- AuthenticationService Begining -----------------
 app.post('/login', async (req, res) => {
     try {
       const response = await axios.post(authenticationService + '/login', req.body);
@@ -112,6 +144,7 @@ app.post('/register', async (req, res) => {
       res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+// ----------------- AuthenticationService Ending -----------------
 
 // Start the server
 app.listen(port, async() => {

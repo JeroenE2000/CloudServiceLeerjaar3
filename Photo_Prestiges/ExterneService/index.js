@@ -1,5 +1,5 @@
-const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('./rabbitmqconnection');
-const { authMiddleware } = require('../Middleware/roles');
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
+const { opaqueTokenCheck } = require('../Middleware/roles');
 const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
 require('./mongooseconnection');
 require('dotenv').config();
@@ -34,7 +34,7 @@ async function getImageData(targetId) {
 let targetId;
 
 
-app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async function(req, res, next) {
+app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
         targetId = req.params.tid;
         getImageData(targetId);
