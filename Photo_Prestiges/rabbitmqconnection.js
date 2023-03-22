@@ -51,4 +51,6 @@ async function consumeFromQueue(queueName, dbname, routingKey, callback) {
   }
 }
 
+// Apparte functie maken voor direct exchange met daarbij de consumer tag en de queue naam
+
 module.exports = { connectToRabbitMQ, sendMessageToQueue, consumeFromQueue, uri };
