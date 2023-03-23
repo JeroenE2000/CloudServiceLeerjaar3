@@ -96,6 +96,9 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
             targetID: tid
         }
         await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');
+        await db.collection('targets').insertOne(data);
+
+        //van deze afblijven deze is goed
         await sendMessageToQueue('UserTargetQueue', JSON.stringify(userdata), 'get_user_target');
         return res.json({message: "success"});
     } catch (error) {
@@ -114,9 +117,8 @@ app.listen(port, async() => {
     else {
         await connectToRabbitMQ();
         await consumeFromQueue("targetQueue", "targets", 'get_target', async (data, dbname) => {
-            await mongoose.connection.collection(dbname).insertOne(data);
+            console.log("Uploaded the following data to targets: ", data);
         });
-
         await consumeFromQueue('getTargetImageDataQueue', 'targets', 'get_target_image_data', async (data, dbname) => {
             let tid = data.tid;
             let imageData = await TargetModel.findOne({tid: tid});
