@@ -12,7 +12,7 @@ const authMiddleware = (req, res, next) => {
       next();
     });
   } else {
-    res.status(401).send('Token not found');
+    return res.status(401).send('Token not found');
   }
 };
 
@@ -23,10 +23,10 @@ const opaqueTokenCheck = (req, res, next) => {
     if(authHeader === process.env.OPAQUE_TOKEN) {
       next();
     } else {
-      res.status(401).send('Invalid token');
+      return res.status(401).send('Invalid token');
     }
   } else {
-    res.status(401).send('Token not found');
+    return res.status(401).send('Token not found');
   }
 };
 
@@ -35,7 +35,7 @@ const checkRole = (role) => {
     if (req.user.role === role) {
       next();
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Unauthorized' });
     }
   };
 }

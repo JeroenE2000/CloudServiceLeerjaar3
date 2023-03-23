@@ -33,7 +33,7 @@ app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
             opaque_token: process.env.OPAQUE_TOKEN //pass the opaque token to the target service
           }
         });
-        res.json(response.data);
+        return res.json(response.data);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -62,7 +62,7 @@ app.post('/targets', authMiddleware, upload.single('image'), async (req, res) =>
           user_id: req.user.uid
         }
       });
-      res.json(response.data);
+      return res.json(response.data);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Internal Server Error' });
@@ -76,10 +76,10 @@ app.get('/targets/coordinates/:lat/:long', authMiddleware, async function(req, r
               opaque_token: process.env.OPAQUE_TOKEN
             }
         });
-        res.json(response.data);
+        return res.json(response.data);
     } catch(error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
@@ -90,10 +90,10 @@ app.get('/targets/city/:city', authMiddleware, async function(req, res) {
               opaque_token: process.env.OPAQUE_TOKEN
             }
         });
-        res.json(response.data);
+        return res.json(response.data);
     } catch(error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
@@ -114,10 +114,10 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
           user_id: req.user.uid
         }
       });
-      res.json(response.data);
+      return res.json(response.data);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // ----------------- ExterneService Ending -----------------
@@ -128,20 +128,20 @@ app.post('/compareUpload/:tid', authMiddleware, upload.single('image'), async fu
 app.post('/login', async (req, res) => {
     try {
       const response = await axios.post(authenticationService + '/login', req.body);
-      res.json(response.data);
+      return res.json(response.data);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
   
 app.post('/register', async (req, res) => {
     try {
       const response = await axios.post(authenticationService + '/register', req.body);
-      res.json(response.data);
+      return res.json(response.data);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: 'Internal Server Error' });
+      return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // ----------------- AuthenticationService Ending -----------------

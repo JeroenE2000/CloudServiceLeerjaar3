@@ -32,7 +32,7 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 // make a GET request to the database to get all the targets
 app.get('/targets', opaqueTokenCheck, async function(req, res) {
     let target = await db.collection('targets').find().toArray();
-    res.json({message: "success", data: target});
+    return res.json({message: "success", data: target});
 });
 
 // Route to get all targets by city
@@ -41,14 +41,14 @@ app.get('/targets/city/:city', opaqueTokenCheck, async function(req, res) {
 
     //check if city is filled in
     if(city == null) {
-        res.json({message: "city is not filled in"});
+       return res.json({message: "city is not filled in"});
     }
     await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ city }), 'filter_by_city');
 
-    await consumeFromDirectExchange('targetFilterExchange', dbname, 'filter_by_city', async function(data, dbname) {
+    await consumeFromDirectExchange('targetFilterExchange', 'targets', 'filter_by_city', async function(data, dbname) {
         const result = await Target.find({ 'location.placename': data.city });
         console.log('Received data from the direct exchange: ', result);
-        res.json({message: "success", data: result});
+        return res.json({message: "success", data: result});
     });
 });
 
@@ -59,7 +59,7 @@ app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req,
 
     //check if lat and long are villed in 
     if(lat == null || long == null) {
-        res.json({message: "lat and long are not filled in"});
+       return res.json({message: "lat and long are not filled in"});
     }
 
     await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ lat, long }), 'filter_by_coordinates');
@@ -67,7 +67,7 @@ app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req,
         console.log(data.lat, data.long);
         const result = await TargetModel.find({'location.coordinates': [(data.long), (data.lat)]});
         console.log('Received data from the direct exchange: ', result);
-        res.json({message: "success", data: result});
+        return res.json({message: "success", data: result});
     });
 });
 
@@ -97,10 +97,10 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         }
         await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');
         await sendMessageToQueue('UserTargetQueue', JSON.stringify(userdata), 'get_user_target');
-        res.json({message: "success"});
+        return res.json({message: "success"});
     } catch (error) {
         console.log(error);
-        res.status(500).json({message: "something went wrong", data: error})
+       return res.status(500).json({message: "something went wrong", data: error})
     }
 });
 

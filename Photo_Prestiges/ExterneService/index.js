@@ -32,36 +32,32 @@ async function getImageData(targetId) {
 }
 
 let targetId;
+let imageData;
 
+async function consumeData(req) {
+    const uploadImage = req.file.path;
+    const targetImage = Buffer.from(imageData.image.data).toString('utf8');
+    const score = await compareImages(targetImage, uploadImage);
+    return score;
+}
 
 app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
         targetId = req.params.tid;
-        getImageData(targetId);
+        await getImageData(targetId);
+        const score = await consumeData(req);
+        return res.json({message: "success", score: score});
 
-        await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
-            if(data == null) {
-                res.json({message: "target heeft geen image of bestaat niet of de targetId is niet correct of de targetId is niet meegegeven of de queue bestaat niet"});
-            }
-            if(data.message == "no image found") {
-                res.json({message: "target heeft geen image of bestaat niet"});
-            } else {
-                const uploadImage = req.file.path;
-                const targetImage = Buffer.from(data.image.data).toString('utf8');
-                const score = await compareImages(targetImage, uploadImage);
-                res.json({message: "success", score: score});
-            }
-            // const uploadCount = await db.collection('uploads').find().sort({uploadId: -1}).limit(1).toArray();
+         // const uploadCount = await db.collection('uploads').find().sort({uploadId: -1}).limit(1).toArray();
 
             // let nextUploadID = 1;
             // if (uploadCount.length > 0) {
             //     nextUploadID = parseInt(nextUploadID[0].uploadId) + 1;
             // }
             // res.json({message: "success"});
-        });
     } catch (error) {
         console.log(error);
-        res.status(500).json({message: "something went wrong", data: error})
+        return res.status(500).json({message: "something went wrong", data: error})
     }
 });
 
@@ -137,5 +133,8 @@ async function compareImages(targetImage, uploadImage) {
 
 app.listen(port, async() => {
     await connectToRabbitMQ();
+    consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
+        imageData = data;
+    });
     console.log('Server is up on port ' + port);
 });

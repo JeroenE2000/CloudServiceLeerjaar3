@@ -27,7 +27,7 @@ app.post('/login', async function(req, res) {
     if(findUser != null && await bcrypt.compare(password, findUser.password)) {
         var payload = {uid: findUser.uid, username: findUser.username, role: findUser.role};
         var authToken = jwt.sign(payload, jwtOptions.secretOrKey, {expiresIn: 604800});
-        res.json({message: "ok", token: authToken});
+        return res.json({message: "ok", token: authToken});
     } else {
          res.status(401).json({message: "Username or password is incorrect"});
     }
@@ -62,7 +62,7 @@ app.post('/register', async function(req, res) {
         role: role
     };
     user.insertOne(newUser);
-    res.json({ message: 'User created!' });
+    return res.json({ message: 'User created!' });
   });
 
 app.listen(port, async() => {
