@@ -3,7 +3,7 @@ var mongoose = require('mongoose');
 var uploadSchema = new mongoose.Schema({
     tid: {
         type: Number,
-        equired: true,
+        required: true,
     },
     image: {
       data: Buffer,
