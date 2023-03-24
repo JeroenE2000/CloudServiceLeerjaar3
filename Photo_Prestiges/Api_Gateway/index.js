@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 //authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route vergeet niet een header mee te sturen met de request
 app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
     try {
-        const response = await axios.get(targetService + '/targets', {
+        const response = await axios.get(targetService + '/targets?page=' + req.query.page + '&perpage=' + req.query.perpage , {
           headers: {
             opaque_token: process.env.OPAQUE_TOKEN //pass the opaque token to the target service
           }

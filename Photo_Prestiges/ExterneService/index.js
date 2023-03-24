@@ -3,6 +3,7 @@ const { opaqueTokenCheck } = require('../Middleware/roles');
 const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
 require('./mongooseconnection');
 require('dotenv').config();
+const uploadTargetModel = require('./Models/UploadTarget');
 var express = require('express');
 var bodyParser = require('body-parser');
 let app = express();
@@ -12,6 +13,7 @@ const FormData = require('form-data');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const upload = multer();
+const db = mongoose.connection;
 
 upload.storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -25,36 +27,63 @@ upload.storage = multer.diskStorage({
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-async function getImageData(targetId) {
-    const message = {tid: targetId};
-    const routingKey = 'get_target_image_data';
-    await sendMessageToQueue('getTargetImageDataQueue', Buffer.from(JSON.stringify(message)), routingKey);
-}
-
-let targetId;
-let imageData;
-
-async function consumeData(req) {
-    const uploadImage = req.file.path;
-    const targetImage = Buffer.from(imageData.image.data).toString('utf8');
-    const score = await compareImages(targetImage, uploadImage);
-    return score;
-}
 
 app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
-        targetId = req.params.tid;
-        await getImageData(targetId);
-        const score = await consumeData(req);
-        return res.json({message: "success", score: score});
+        let targetId = req.params.tid;
+        const result = await uploadTargetModel.findOne({tid: targetId});
+        if(result == null) {
+            return res.json({message: "target not found"});
+        }
+        const uploadImage = req.file.path;
+        const targetImage = Buffer.from(result.image.data).toString('utf8');
+        const score = await compareImages(targetImage, uploadImage);
 
-         // const uploadCount = await db.collection('uploads').find().sort({uploadId: -1}).limit(1).toArray();
+        const uploadId = Math.floor(Math.random() * 9000000000) + 1000000000;
+        const scoreId = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
+        const userId = req.headers['user_id']; 
 
-            // let nextUploadID = 1;
-            // if (uploadCount.length > 0) {
-            //     nextUploadID = parseInt(nextUploadID[0].uploadId) + 1;
-            // }
-            // res.json({message: "success"});
+        let uploadData = {
+            uploadId: uploadId,
+            tid: targetId,
+            matchingtargets: {
+                image: {
+                    data: req.file.path,
+                    contentType: req.file.mimetype
+                },
+                userid: {
+                    userId
+                },
+                score: {
+                    score
+                },
+            }   
+        }
+        let scoreData = {
+            scoreId: scoreId,
+            uploads: {
+                targetId: {
+                    targetId
+                },
+                uploadId:{
+                    uploadId
+                }, 
+                image: {
+                  data: req.file.path,
+                  contentType: req.file.mimetype,
+                },
+                userid: {
+                    userId
+                },
+                score: {
+                    score
+                },
+            } 
+        }
+        await db.collection('uploads').insertOne(uploadData);
+        await sendMessageToQueue('ScoreData', JSON.stringify(scoreData), 'score_data');
+
+        return res.json({message: "success", data: score});
     } catch (error) {
         console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
@@ -133,8 +162,9 @@ async function compareImages(targetImage, uploadImage) {
 
 app.listen(port, async() => {
     await connectToRabbitMQ();
-    consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
-        imageData = data;
+    
+    await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
+        await db.collection('uploadtargets').insertOne(data);
     });
     console.log('Server is up on port ' + port);
 });

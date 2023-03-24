@@ -17,7 +17,11 @@ var uploadSchema = new mongoose.Schema({
     userid: {
       type: Number,
       required: true
-    }
+    },
+    score: {
+      type: Number,
+      required: true
+    },
   },
 });
 

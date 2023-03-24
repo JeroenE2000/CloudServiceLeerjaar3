@@ -5,16 +5,28 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  score: {
-    type: Number,
-    required: true,
-  },
-  uploadids: [
-    {
+  uploads: {
+    targetId: {
       type: Number,
       required: true,
-    }
-  ]
+    },
+    uploadId:{
+      type: Number,
+      required: true,
+    }, 
+    image: {
+      data: Buffer,
+      contentType: String,
+    },
+    userid: {
+      type: Number,
+      required: true
+    },
+    score: {
+      type: Number,
+      required: true
+    },
+  } 
 });
 
 mongoose.model('Score', userSchema);
