@@ -5,6 +5,10 @@ const targetSchema = new mongoose.Schema({
       type: Number,
       required: true,
     },
+    uid: {
+      type: Number,
+      required: true,
+    },
     targetName: {
       type: String,
       required: true

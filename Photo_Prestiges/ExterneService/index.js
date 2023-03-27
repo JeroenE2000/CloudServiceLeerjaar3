@@ -1,4 +1,4 @@
-const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue , consumeFromDirectExchange} = require('../rabbitmqconnection');
 const { opaqueTokenCheck } = require('../Middleware/roles');
 const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
 require('./mongooseconnection');
@@ -166,5 +166,16 @@ app.listen(port, async() => {
     await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
         await db.collection('uploadtargets').insertOne(data);
     });
+
+    await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_externe_service", async (data, dbname) => {
+        await uploadTargetModel.deleteOne({tid: data.tid});
+        console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
+    });
+
+    await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_user_externe_service", async (data, dbname) => {
+        await uploadTargetModel.deleteOne({tid: data.tid});
+        console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
+    });
+
     console.log('Server is up on port ' + port);
 });

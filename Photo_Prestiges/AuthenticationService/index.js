@@ -1,4 +1,4 @@
-const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
+const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue, consumeFromDirectExchange} = require('../rabbitmqconnection');
 const port = process.env.AUTHENTICATION_SERVICE_PORT || 3015;
 require('dotenv').config();
 var express = require('express');
@@ -75,11 +75,20 @@ app.listen(port, async() => {
         // dit zorgt ervoor dat de target aan een user wordt toegevoegd hij pakt de UserTargetQueue en roept daarbij de users collection aan om 
         // de targetID toe te voegen aan de user
         await consumeFromQueue("UserTargetQueue", "users", "get_user_target", async (data, dbname) => {
-            let findUser = await db.collection(dbname).findOne({ uid: data.uid });
+            let findUser = await User.findOne({ uid: data.uid });
             if(findUser != null) {
                 const targetIDArray = [data.targetID];
-                await db.collection('users').updateOne({uid: data.uid}, {$push: {targetIDs: { $each: targetIDArray }}});
+                await User.updateOne({uid: data.uid}, {$push: {targetIDs: { $each: targetIDArray }}});
             }
+        });
+        await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_fromuser_admin", async (data, dbname) => {
+            await User.findOneAndUpdate({uid: data.userId}, {$pull: {targetIDs: data.tid}}, {new: true});
+            console.log(`Removed target with tid ${data.tid} from user with uid ${data.userId} targetIDs`);
+        });
+
+        await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_of_user", async (data, dbname) => {
+            await User.findOneAndUpdate({uid: data.userId}, {$pull: {targetIDs: data.tid}}, {new: true});
+            console.log(`Removed target with tid ${data.tid} from user with uid ${data.userId} targetIDs`);
         });
     }
 });

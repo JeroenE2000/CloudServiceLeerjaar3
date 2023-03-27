@@ -26,11 +26,40 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // ----------------- TargetService Beginning -----------------
 //authMiddleware, checkRole("admin") dit gebruiken om een role te zetten op een route vergeet niet een header mee te sturen met de request
-app.get('/targets', authMiddleware, checkRole('admin'), async (req, res) => {
+app.get('/targets', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
     try {
         const response = await axios.get(targetService + '/targets?page=' + req.query.page + '&perpage=' + req.query.perpage , {
           headers: {
             opaque_token: process.env.OPAQUE_TOKEN //pass the opaque token to the target service
+          }
+        });
+        return res.json(response.data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+app.delete('/targets/:tid', authMiddleware, checkRole(['user', 'admin']) , async (req, res) => {
+    try {
+        const response = await axios.delete(targetService + '/targets/' + req.params.tid, {
+          headers: {
+            opaque_token: process.env.OPAQUE_TOKEN,
+            user_id: req.user.uid
+          }
+        });
+        return res.json(response.data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+app.delete('/admin/targets/:tid', authMiddleware, checkRole(['admin']), async (req, res) => {
+    try {
+        const response = await axios.delete(targetService + '/admin/targets/' + req.params.tid, {
+          headers: {
+            opaque_token: process.env.OPAQUE_TOKEN,
           }
         });
         return res.json(response.data);
@@ -54,7 +83,6 @@ app.post('/targets', authMiddleware, upload.single('image'), async (req, res) =>
             filename: req.file.originalname,
             contentType: req.file.mimetype
       });
-
       //formdata meegeven aan de post request
       const response = await axios.post(targetService + '/targets', form, {
         headers: {

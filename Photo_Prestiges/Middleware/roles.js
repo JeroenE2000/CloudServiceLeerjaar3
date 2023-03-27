@@ -30,15 +30,15 @@ const opaqueTokenCheck = (req, res, next) => {
   }
 };
 
-const checkRole = (role) => {
+const checkRole = (roles) => {
   return (req, res, next) => {
-    if (req.user.role === role) {
+    if (roles.includes(req.user.role)) {
       next();
     } else {
       return res.status(401).json({ message: 'Unauthorized' });
     }
   };
-}
+};
 
 module.exports = {
   authMiddleware, checkRole, opaqueTokenCheck

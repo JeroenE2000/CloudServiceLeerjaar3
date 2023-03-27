@@ -3,6 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { opaqueTokenCheck } = require('../Middleware/roles');
 const app = express();
+const fs = require('fs');
+const path = require('path');
+
 require('dotenv').config();
 const multer = require('multer');
 const storage = multer.diskStorage({
@@ -111,6 +114,60 @@ app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req,
     return res.json({message: "success", data: target_coordinates_filter});
 });
 
+app.delete('/targets/:tid', opaqueTokenCheck, async function(req, res) {
+    const tid = req.params.tid;
+    if (tid == null) {
+        return res.json({ message: "tid is not filled in" });
+    }
+    const uid = req.headers['user_id']
+    const oldTargetData = await TargetModel.findOne({ 'tid': tid });
+    if (oldTargetData == null) {
+        return res.json({ message: "target does not exist or this is not the users target" });
+    }
+    
+    const imageData = Buffer.from(oldTargetData.image.data).toString('utf8');
+
+    //remove image from the uploads folder
+    fs.unlinkSync(path.join(__dirname, '..', imageData));
+    await sendMessageToDirectExchange('targetDeleteExchange', JSON.stringify({ tid, uid }), 'delete_target_of_user');
+    await sendMessageToDirectExchange('targetDeleteExchange', JSON.stringify({ tid }), 'delete_target_from_user_externe_service');
+    await TargetModel.deleteOne({ 'tid': tid });
+
+    res.json({message: "success"});
+});
+
+
+// ------------- Start of Admin Functions -----------------
+app.delete('/admin/targets/:tid', opaqueTokenCheck, async function(req, res) {
+    const tid = req.params.tid;
+    if (tid == null) {
+      return res.json({ message: "tid is not filled in" });
+    }
+  
+    const oldTargetData = await TargetModel.findOne({ 'tid': tid });
+  
+    if (oldTargetData == null) {
+      return res.json({ message: "target does not exist" });
+    }
+  
+    const userId = oldTargetData.uid;
+    const imageData = Buffer.from(oldTargetData.image.data).toString('utf8');
+
+    //remove image from the uploads folder
+    fs.unlinkSync(path.join(__dirname, '..', imageData));
+
+    // send message to rabbitmq that the target is deleted so the other services can delete the target
+    await sendMessageToDirectExchange('targetDeleteExchange', JSON.stringify({ tid, userId }), 'delete_target_fromuser_admin');
+    await sendMessageToDirectExchange('targetDeleteExchange', JSON.stringify({ tid }), 'delete_target_from_externe_service');
+    await TargetModel.deleteOne({ 'tid': tid });
+
+    return res.json({ message: "success", data: "Target succesvol verwijdert" });
+});
+  
+// ------------- End of Admin Functions -----------------
+
+
+
 //make a post request to the database to add a target
 app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
@@ -118,6 +175,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         const tid = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
         let data = {
             tid: tid,
+            uid: req.headers['user_id'],
             targetName: req.body.targetName,
             description: req.body.description,
             location: {
