@@ -4,6 +4,7 @@ const port = process.env.EXTERNAL_SERVICE_PORT || 3014;
 require('./mongooseconnection');
 require('dotenv').config();
 const uploadTargetModel = require('./Models/UploadTarget');
+const UploadModel = require('./Models/Upload');
 var express = require('express');
 var bodyParser = require('body-parser');
 let app = express();
@@ -158,6 +159,20 @@ async function compareImages(targetImage, uploadImage) {
         }
     })();
 }
+
+app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
+    try {
+        const result = await db.collection('uploads').find().toArray();
+        if(result == null) {
+            return res.json({message: "no uploads found"});
+        }
+        return res.json({message: "success", data: result});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "something went wrong", data: error})
+    }
+});
+
 
 
 app.listen(port, async() => {
