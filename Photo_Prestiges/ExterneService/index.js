@@ -63,22 +63,14 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
         let scoreData = {
             scoreId: scoreId,
             uploads: {
-                targetId: {
-                    targetId
-                },
-                uploadId:{
-                    uploadId
-                }, 
+                targetId,
+                uploadId,
                 image: {
                   data: req.file.path,
                   contentType: req.file.mimetype,
                 },
-                userid: {
-                    userId
-                },
-                score: {
-                    score
-                },
+                userId,
+                score
             } 
         }
         await db.collection('uploads').insertOne(uploadData);

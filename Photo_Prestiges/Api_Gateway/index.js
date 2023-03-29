@@ -181,6 +181,37 @@ app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
 
 // ----------------- ExterneService Ending -----------------
 
+// ----------------- Score Beginning -----------------
+app.get('/admin/scores/:id', authMiddleware, checkRole(['admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/admin/scores/' + req.params.id, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/scores', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/scores?tid=' + req.query.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+// ----------------- Score Ending -----------------
 
 
 // ----------------- AuthenticationService Begining -----------------
@@ -205,36 +236,7 @@ app.post('/register', async (req, res) => {
 });
 // ----------------- AuthenticationService Ending -----------------
 
-// ----------------- Score Ending -----------------
-app.get('admin/scores/:id', authMiddleware, checkRole['admin'], async (req, res) => {
-  try {
-    const response = await axios.get(externalService + '/Score', {
-      headers: {
-        opaque_token: process.env.OPAQUE_TOKEN,
-        user_id: req.user.uid,
-        }
-    });
-    return res.json(response.data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
-app.get('scores/:id', authMiddleware, checkRole['user','admin'], async (req, res) => {
-  try {
-    const response = await axios.get(externalService + '/Score', {
-      headers: {
-        opaque_token: process.env.OPAQUE_TOKEN,
-        user_id: req.user.uid,
-        }
-    });
-    return res.json(response.data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
-// ----------------- Score Ending -----------------
+
 // Start the server
 app.listen(port, async() => {
   console.log(`ApiGateway is on port ${port}`);

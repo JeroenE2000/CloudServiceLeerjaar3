@@ -30,3 +30,5 @@ const userSchema = new mongoose.Schema({
 });
 
 mongoose.model('Score', userSchema);
+
+module.exports = mongoose.model('Score');
