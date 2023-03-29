@@ -12,20 +12,34 @@ const authMiddleware = (req, res, next) => {
       next();
     });
   } else {
-    res.status(401).send('Token not found');
+    return res.status(401).send('Token not found');
   }
 };
 
-const checkRole = (role) => {
-  return (req, res, next) => {
-    if (req.user.role === role) {
+//APPARTE OPAQUE FUNCTION MAKEN
+const opaqueTokenCheck = (req, res, next) => {
+  const authHeader = req.headers.opaque_token;
+  if (authHeader) {
+    if(authHeader === process.env.OPAQUE_TOKEN) {
       next();
     } else {
-      res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).send('Invalid token');
+    }
+  } else {
+    return res.status(401).send('Token not found');
+  }
+};
+
+const checkRole = (roles) => {
+  return (req, res, next) => {
+    if (roles.includes(req.user.role)) {
+      next();
+    } else {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
   };
-}
+};
 
 module.exports = {
-  authMiddleware, checkRole
+  authMiddleware, checkRole, opaqueTokenCheck
 };

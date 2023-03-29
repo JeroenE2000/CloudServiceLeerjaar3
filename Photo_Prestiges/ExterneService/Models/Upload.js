@@ -1,11 +1,7 @@
 var mongoose = require('mongoose');
 
 var uploadSchema = new mongoose.Schema({
-  uid: {
-    type: Number,
-    required: true,
-  },
-  userid: {
+  uploadId: {
     type: Number,
     required: true,
   },
@@ -13,14 +9,20 @@ var uploadSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  image: {
-    data: Buffer,
-    contentType: String,
+  matchingtargets: {
+    image: {
+      data: Buffer,
+      contentType: String,
+    },
+    userid: {
+      type: Number,
+      required: true
+    },
+    score: {
+      type: Number,
+      required: true
+    },
   },
-  date: {
-    type: Date,
-    default: Date.now
-  }
 });
 
 mongoose.model('Upload', uploadSchema);
