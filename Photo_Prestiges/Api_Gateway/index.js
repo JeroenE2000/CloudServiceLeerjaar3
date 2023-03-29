@@ -164,6 +164,21 @@ app.get('/uploads', authMiddleware, async function(req, res, next) {
     }
 });
 
+app.get('/uploadtarget', authMiddleware, async function(req, res, next) {
+  try {
+    const response = await axios.get(externalService + '/uploadtarget', {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
     try {
       const response = await axios.delete(externalService + '/compareUpload/' + req.params.uid, {

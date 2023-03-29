@@ -162,9 +162,24 @@ async function compareImages(targetImage, uploadImage) {
 
 app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
     try {
-        const result = await db.collection('uploads').find().toArray();
+        const result = await db.collection('uploads').find({}).toArray();
         if(result == null) {
             return res.json({message: "no uploads found"});
+        }
+        return res.json({message: "success", data: result});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "something went wrong", data: error})
+    }
+});
+
+
+// Get all target uploads from uploadtargets table
+app.get('/uploadtarget', opaqueTokenCheck, async function(req, res, next) {
+    try {
+        const result = await db.collection('uploadtargets').find({}).toArray();
+        if(result == null) {
+            return res.json({message: "no uploadtarget found"});
         }
         return res.json({message: "success", data: result});
     } catch (error) {
