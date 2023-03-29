@@ -1,3 +1,4 @@
+const { opaqueTokenCheck } = require('../Middleware/roles');
 var express = require('express');
 const {connectToRabbitMQ, sendMessageToQueue , consumeFromQueue} = require('../rabbitmqconnection');
 let app = express();
@@ -10,7 +11,29 @@ require('./mongooseconnection');
 
 app.use(express.json());
 
-
+// Route to get all scores by target
+/*app.get('admin/scores/:id', opaqueTokenCheck, async function(req, res) {
+    
+    try{
+        let id = req.params.id;
+        let dataScores = db.collection('score').find({targetId: id}).toArray();
+        return res.json({message: "success", data: dataScores});
+    }catch(error){
+        return res.json({message: "Error", data: error});
+    }
+    
+});
+// Route to get all scores from user by target
+app.get('scores/:id', opaqueTokenCheck, async function(req, res) {
+    try{
+        let id = req.params.id;
+        let dataScores = db.collection('score').find({targetId: id}).toArray();
+        return res.json({message: "success", data: dataScores});
+    }catch(error){
+        return res.json({message: "Error", data: error});
+    }
+    
+});*/
 
 app.listen(port, async () => {
     await connectToRabbitMQ();
