@@ -256,6 +256,22 @@ app.get('/scores/:tid', authMiddleware, checkRole(['user', 'admin']), async (req
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+app.get('/scores/myscore/:tid', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/scores/myscore/' + req.params.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 // ----------------- Score Ending -----------------
 
 
