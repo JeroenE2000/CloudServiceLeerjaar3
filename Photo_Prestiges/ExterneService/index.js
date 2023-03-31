@@ -49,7 +49,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
 
         const uploadId = Math.floor(Math.random() * 9000000000) + 1000000000;
         const scoreId = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
-        const userId = req.headers['user_id']; 
+        const userId = parseInt(req.headers['user_id']); 
 
         let uploadData = {
             uploadId: uploadId,
@@ -69,23 +69,16 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
         }
         let scoreData = {
             scoreId: scoreId,
+            ownerId: result.ownerId,
             uploads: {
-                targetId: {
-                    targetId
-                },
-                uploadId:{
-                    uploadId
-                }, 
+                targetId,
+                uploadId,
                 image: {
                   data: req.file.path,
                   contentType: req.file.mimetype,
                 },
-                userid: {
-                    userId
-                },
-                score: {
-                    score
-                },
+                userId,
+                score
             } 
         }
 

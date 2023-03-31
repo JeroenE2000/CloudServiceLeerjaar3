@@ -218,7 +218,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         const tid = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
         let data = {
             tid: tid,
-            uid: req.headers['user_id'],
+            uid: parseInt(req.headers['user_id']),
             targetName: req.body.targetName,
             description: req.body.description,
             location: {
@@ -237,6 +237,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         }
         let externeServiceData = {
             tid: tid,
+            ownerId: parseInt(userId),
             image: {
                 data: buffer,
                 contentType: req.file.mimetype

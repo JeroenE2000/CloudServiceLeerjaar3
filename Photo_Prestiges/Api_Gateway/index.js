@@ -226,6 +226,37 @@ app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
 
 // ----------------- ExterneService Ending -----------------
 
+// ----------------- Score Beginning -----------------
+app.get('/admin/scores/:tid', authMiddleware, checkRole(['admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/admin/scores/' + req.params.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/scores/:tid', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/scores/' + req.params.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+// ----------------- Score Ending -----------------
 
 
 // ----------------- AuthenticationService Begining -----------------
@@ -249,6 +280,7 @@ app.post('/register', async (req, res) => {
     }
 });
 // ----------------- AuthenticationService Ending -----------------
+
 
 // Start the server
 app.listen(port, async() => {
