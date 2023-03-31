@@ -13,7 +13,7 @@ require('./mongooseconnection');
 app.use(express.json());
 
 //Route to get all scores by target
-app.get('/admin/scores:tid', opaqueTokenCheck, async function(req, res) {
+app.get('/admin/scores/:id', opaqueTokenCheck, async function(req, res) {
     try{
         let id = req.params.id;
         let dataScores = db.collection('score').find({'uploads.targetId': id}).toArray();
@@ -24,8 +24,8 @@ app.get('/admin/scores:tid', opaqueTokenCheck, async function(req, res) {
     
 });
 // Route to get all scores from user by target
-app.get('/scores:tid', opaqueTokenCheck, async function(req, res) {
-    let id = req.params.tid;
+app.get('/scores/:id', opaqueTokenCheck, async function(req, res) {
+    let id = req.params.id;
     const userId = req.headers['user_id']
     const scores = await db.collection('scores').find({'uploads.targetId': id , 'uploads.userId': userId}).toArray();
     if(scores.length == 0){
