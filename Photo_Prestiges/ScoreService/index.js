@@ -15,7 +15,7 @@ app.use(express.json());
 //Route to get all scores by target
 app.get('/admin/scores/:tid', opaqueTokenCheck, async function(req, res) {
     try{
-        let targetId = req.params.tid;
+        let targetId = parseInt(req.params.tid);
         let dataScores = await ScoreModel.find({'uploads.targetId': targetId});
         return res.json({message: "success", data: dataScores});
     }catch(error){
@@ -26,7 +26,7 @@ app.get('/admin/scores/:tid', opaqueTokenCheck, async function(req, res) {
 // Route to get all the scores of users on my target and a specific target
 app.get('/scores/:tid', opaqueTokenCheck, async function(req, res) {
     let targetId = req.params.tid;
-    const userId = req.headers['user_id']
+    const userId = parseInt(req.headers['user_id']);
     const scores = await ScoreModel.find({ownerId: userId , 'uploads.targetId': targetId});
 
     if(scores.length == 0){

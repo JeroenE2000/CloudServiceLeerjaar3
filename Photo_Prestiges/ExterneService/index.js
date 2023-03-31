@@ -37,7 +37,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
             fs.unlinkSync(path.join(__dirname, '..', imageData));
             return res.json({message: "invalid file type"});
         }
-        let targetId = req.params.tid;
+        let targetId = parseInt(req.params.tid);
         const result = await uploadTargetModel.findOne({tid: targetId});
         if(result == null) {
             return res.json({message: "target not found"});
