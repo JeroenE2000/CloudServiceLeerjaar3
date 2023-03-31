@@ -262,7 +262,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
 
   
 app.listen(port, async() => {
-    console.log('Server is up on port ' + port);
+    console.log('TargetService is up on port ' + port);
     if(await connectToRabbitMQ() == false) {
         console.log("RabbitMQ is not connected");
         res.json({message: "RabbitMQ is not connected"});
