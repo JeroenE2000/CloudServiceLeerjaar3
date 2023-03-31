@@ -182,7 +182,9 @@ app.get('/uploadtarget', opaqueTokenCheck, async function(req, res, next) {
         if(result == null) {
             return res.json({message: "no uploadtarget found"});
         }
-        return res.json({message: "success", data: result});
+        const tids = result.map(uploadtarget => uploadtarget.tid);
+
+        return res.json({message: "Dit zijn alle targetId's die momenteel geupload zijn waarmee je kan vergelijken", data: tids});
     } catch (error) {
         console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
