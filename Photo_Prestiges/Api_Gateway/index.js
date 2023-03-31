@@ -197,7 +197,7 @@ app.get('/admin/scores/:id', authMiddleware, checkRole(['admin']), async (req, r
   }
 });
 
-app.get('/scores', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+app.get('/scores/:id', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
   try {
     const response = await axios.get(scoreService + '/scores?tid=' + req.query.tid, {
       headers: {
