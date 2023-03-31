@@ -13,10 +13,10 @@ require('./mongooseconnection');
 app.use(express.json());
 
 //Route to get all scores by target
-app.get('/admin/scores', opaqueTokenCheck, async function(req, res) {
+app.get('/admin/scores:tid', opaqueTokenCheck, async function(req, res) {
     try{
         let id = req.params.id;
-        let dataScores = db.collection('score').find({targetId: id}).toArray();
+        let dataScores = db.collection('score').find({'uploads.targetId': id}).toArray();
         return res.json({message: "success", data: dataScores});
     }catch(error){
         return res.json({message: "Error", data: error});
@@ -24,10 +24,10 @@ app.get('/admin/scores', opaqueTokenCheck, async function(req, res) {
     
 });
 // Route to get all scores from user by target
-app.get('/scores', opaqueTokenCheck, async function(req, res) {
-    let tid = req.query.tid;
+app.get('/scores:tid', opaqueTokenCheck, async function(req, res) {
+    let id = req.params.tid;
     const userId = req.headers['user_id']
-    const scores = await db.collection('scores').find({'uploads.targetId': tid , 'uploads.userId': userId}).toArray();
+    const scores = await db.collection('scores').find({'uploads.targetId': id , 'uploads.userId': userId}).toArray();
     if(scores.length == 0){
         return res.json({message: "Deze target is of niet van jouw of hij bestaat niet", data: scores});
     }
