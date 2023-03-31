@@ -13,6 +13,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const path = require('path');
 const upload = multer();
 const db = mongoose.connection;
 
@@ -31,13 +32,19 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
-        let targetId = parseInt(req.params.tid);
+        if (req.file.mimetype !== 'image/png' && req.file.mimetype !== 'image/jpeg' && req.file.mimetype !== 'image/jpg') {
+            const imageData = Buffer.from(req.file.path).toString('utf8');
+            fs.unlinkSync(path.join(__dirname, '..', imageData));
+            return res.json({message: "invalid file type"});
+        }
+        let targetId = req.params.tid;
         const result = await uploadTargetModel.findOne({tid: targetId});
         if(result == null) {
             return res.json({message: "target not found"});
         }
         const uploadImage = req.file.path;
         const targetImage = Buffer.from(result.image.data).toString('utf8');
+       
         const score = await compareImages(targetImage, uploadImage);
 
         const uploadId = Math.floor(Math.random() * 9000000000) + 1000000000;
@@ -74,6 +81,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
                 score
             } 
         }
+
         await db.collection('uploads').insertOne(uploadData);
         await sendMessageToQueue('ScoreData', JSON.stringify(scoreData), 'score_data');
 
@@ -155,7 +163,7 @@ async function compareImages(targetImage, uploadImage) {
 
 app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
     try {
-        const result = await db.collection('uploads').find().toArray();
+        const result = await db.collection('uploads').find({}).toArray();
         if(result == null) {
             return res.json({message: "no uploads found"});
         }
@@ -167,23 +175,43 @@ app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
 });
 
 
+// Get all target uploads from uploadtargets table
+app.get('/uploadtarget', opaqueTokenCheck, async function(req, res, next) {
+    try {
+        const result = await db.collection('uploadtargets').find({}).toArray();
+        if(result == null) {
+            return res.json({message: "no uploadtarget found"});
+        }
+        return res.json({message: "success", data: result});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "something went wrong", data: error})
+    }
+});
+
+
 
 app.listen(port, async() => {
-    await connectToRabbitMQ();
+    console.log('Externe is up on port ' + port);
     
-    await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
-        await db.collection('uploadtargets').insertOne(data);
-    });
-
-    await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_externe_service", async (data, dbname) => {
-        await uploadTargetModel.deleteOne({tid: data.tid});
-        console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
-    });
-
-    await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_user_externe_service", async (data, dbname) => {
-        await uploadTargetModel.deleteOne({tid: data.tid});
-        console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
-    });
-
-    console.log('Server is up on port ' + port);
+    if(await connectToRabbitMQ() == false) {
+        console.log("RabbitMQ is not connected");
+        res.json({message: "RabbitMQ is not connected"});
+    } else {
+        await connectToRabbitMQ();
+    
+        await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
+            await db.collection('uploadtargets').insertOne(data);
+        });
+    
+        await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_externe_service", async (data, dbname) => {
+            await uploadTargetModel.deleteOne({tid: data.tid});
+            console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
+        });
+    
+        await consumeFromDirectExchange("targetDeleteExchange", "users", "delete_target_from_user_externe_service", async (data, dbname) => {
+            await uploadTargetModel.deleteOne({tid: data.tid});
+            console.log(`Removed target with tid ${data.tid} from uploadtarget collection`);
+        });
+    }
 });
