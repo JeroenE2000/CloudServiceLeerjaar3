@@ -5,6 +5,10 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  ownerId: {
+    type: Number,
+    required: true,
+  },
   uploads: {
     targetId: {
       type: Number,

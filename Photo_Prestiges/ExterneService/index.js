@@ -31,7 +31,7 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
-        let targetId = req.params.tid;
+        let targetId = parseInt(req.params.tid);
         const result = await uploadTargetModel.findOne({tid: targetId});
         if(result == null) {
             return res.json({message: "target not found"});
@@ -42,7 +42,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
 
         const uploadId = Math.floor(Math.random() * 9000000000) + 1000000000;
         const scoreId = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
-        const userId = req.headers['user_id']; 
+        const userId = parseInt(req.headers['user_id']); 
 
         let uploadData = {
             uploadId: uploadId,
@@ -62,6 +62,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
         }
         let scoreData = {
             scoreId: scoreId,
+            ownerId: result.ownerId,
             uploads: {
                 targetId,
                 uploadId,

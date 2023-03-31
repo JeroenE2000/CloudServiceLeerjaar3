@@ -182,9 +182,9 @@ app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
 // ----------------- ExterneService Ending -----------------
 
 // ----------------- Score Beginning -----------------
-app.get('/admin/scores/:id', authMiddleware, checkRole(['admin']), async (req, res) => {
+app.get('/admin/scores/:tid', authMiddleware, checkRole(['admin']), async (req, res) => {
   try {
-    const response = await axios.get(scoreService + '/admin/scores/' + req.params.id, {
+    const response = await axios.get(scoreService + '/admin/scores/' + req.params.tid, {
       headers: {
         opaque_token: process.env.OPAQUE_TOKEN,
         user_id: req.user.uid,
@@ -197,9 +197,9 @@ app.get('/admin/scores/:id', authMiddleware, checkRole(['admin']), async (req, r
   }
 });
 
-app.get('/scores/:id', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+app.get('/scores/:tid', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
   try {
-    const response = await axios.get(scoreService + '/scores?tid=' + req.query.tid, {
+    const response = await axios.get(scoreService + '/scores/' + req.params.tid, {
       headers: {
         opaque_token: process.env.OPAQUE_TOKEN,
         user_id: req.user.uid,
