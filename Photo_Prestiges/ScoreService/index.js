@@ -30,9 +30,26 @@ app.get('/scores/:tid', opaqueTokenCheck, async function(req, res) {
     const scores = await ScoreModel.find({ownerId: userId , 'uploads.targetId': targetId});
 
     if(scores.length == 0){
-        return res.json({message: "Deze target is of niet van jouw of hij bestaat niet", data: scores});
+        return res.json({message: "Deze target is of niet van jouw of hij bestaat niet"});
     }
     return res.json({message: "success", data: scores});
+});
+
+// Get my score of a specific target
+app.get('/scores/myscore/:tid', opaqueTokenCheck, async function(req, res) {
+    let targetId = req.params.tid;
+    const userId = parseInt(req.headers['user_id']);
+    const scores = await ScoreModel.find({'uploads.userId': userId , 'uploads.targetId': targetId});
+
+    if(scores.length == 0){
+        return res.json({message: "Deze target bestaat nog niet of je hebt geen score op deze target"});
+    }
+    const scoresData = scores.map(score => ({
+        score: score.uploads.score,
+        targetId: score.uploads.targetId
+      }));
+
+    return res.json({message: "Jouw score op de target zijn", data: scoresData});
 });
 
 app.listen(port, async () => {
