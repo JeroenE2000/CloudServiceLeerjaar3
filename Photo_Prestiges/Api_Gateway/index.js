@@ -125,6 +125,36 @@ app.get('/targets/city/:city', authMiddleware, async function(req, res) {
     }
 });
 
+app.get('/targets/collectionfilter', authMiddleware, async function(req, res) {
+    try {
+      const response = await axios.get(targetService + '/targets/collectionfilter', {
+        headers: {
+          opaque_token: process.env.OPAQUE_TOKEN
+          },
+        params: req.query
+      });
+      return res.json(response.data);
+    } catch(error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+app.get('/targets/:tid/:field', authMiddleware, async function(req, res) {
+    try {
+        const response = await axios.get(targetService + '/targets/' + req.params.tid + '/' + req.params.field, {
+            headers: {
+              opaque_token: process.env.OPAQUE_TOKEN
+            }
+        });
+        return res.json(response.data);
+    } catch(error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
 // ----------------- TargetService Ending -----------------
 
 
@@ -164,6 +194,21 @@ app.get('/uploads', authMiddleware, async function(req, res, next) {
     }
 });
 
+app.get('/uploadtarget', authMiddleware, async function(req, res, next) {
+  try {
+    const response = await axios.get(externalService + '/uploadtarget', {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
     try {
       const response = await axios.delete(externalService + '/compareUpload/' + req.params.uid, {
@@ -181,6 +226,37 @@ app.delete('/uploaded/:uid', authMiddleware, async function(req, res, next) {
 
 // ----------------- ExterneService Ending -----------------
 
+// ----------------- Score Beginning -----------------
+app.get('/admin/scores/:tid', authMiddleware, checkRole(['admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/admin/scores/' + req.params.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/scores/:tid', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+  try {
+    const response = await axios.get(scoreService + '/scores/' + req.params.tid, {
+      headers: {
+        opaque_token: process.env.OPAQUE_TOKEN,
+        user_id: req.user.uid,
+        }
+    });
+    return res.json(response.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+// ----------------- Score Ending -----------------
 
 
 // ----------------- AuthenticationService Begining -----------------
@@ -204,6 +280,7 @@ app.post('/register', async (req, res) => {
     }
 });
 // ----------------- AuthenticationService Ending -----------------
+
 
 // Start the server
 app.listen(port, async() => {

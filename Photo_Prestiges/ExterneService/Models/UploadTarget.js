@@ -5,6 +5,10 @@ var uploadSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    ownerId: {
+        type: Number,
+        required: true,
+    },
     image: {
       data: Buffer,
       contentType: String,

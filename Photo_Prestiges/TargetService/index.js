@@ -79,7 +79,49 @@ app.get('/targets', opaqueTokenCheck, async function(req, res) {
       page,
       perPage
     });
-  });
+});
+
+// ---------------- filter functions -----------------
+app.get('/targets/collectionfilter', opaqueTokenCheck, async function(req, res) {
+    const queryParamMap = {
+        'location.placename': 'location.placename',
+        'location.coordinates': 'location.coordinates',
+        targetName: 'targetName',
+        description: 'description',
+        tid: 'tid',
+        uid: 'uid',
+        imagecontentType: 'image.contentType',
+    }
+
+    let query = {};
+
+    for(const [queryParam, field] of Object.entries(queryParamMap)) {
+        if(req.query[queryParam]) {
+            query[field] = req.query[queryParam];
+           
+        }
+    }
+    console.log({query: query});
+    const targets = await db.collection('targets').find(query).toArray();
+    res.send(targets);
+});
+
+app.get('/targets/:tid/:field', opaqueTokenCheck, async function(req, res) {
+    const tid = parseInt(req.params.tid);
+    const field = req.params.field;
+
+    const target = await db.collection('targets').findOne({tid: tid});
+    if(!target) {
+        return res.json({message: "target does not exist"});
+    }
+
+    if(!(field in target)) {
+        return res.json({message: "field does not exist"});
+    }
+
+    const value = target[field];
+    return res.json({message: "filtered field", [field]: value});
+});
 
 // Route to get all targets by city
 app.get('/targets/city/:city', opaqueTokenCheck, async function(req, res) {
@@ -114,6 +156,8 @@ app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req,
     return res.json({message: "success", data: target_coordinates_filter});
 });
 
+// ----------------- end of filter functions -----------------
+
 app.delete('/targets/:tid', opaqueTokenCheck, async function(req, res) {
     const tid = req.params.tid;
     if (tid == null) {
@@ -135,7 +179,6 @@ app.delete('/targets/:tid', opaqueTokenCheck, async function(req, res) {
 
     res.json({message: "success"});
 });
-
 
 // ------------- Start of Admin Functions -----------------
 app.delete('/admin/targets/:tid', opaqueTokenCheck, async function(req, res) {
@@ -175,7 +218,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         const tid = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
         let data = {
             tid: tid,
-            uid: req.headers['user_id'],
+            uid: parseInt(req.headers['user_id']),
             targetName: req.body.targetName,
             description: req.body.description,
             location: {
@@ -194,11 +237,18 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
         }
         let externeServiceData = {
             tid: tid,
+            ownerId: parseInt(userId),
             image: {
                 data: buffer,
                 contentType: req.file.mimetype
             }
         }
+        if (req.file.mimetype !== 'image/png' && req.file.mimetype !== 'image/jpeg' && req.file.mimetype !== 'image/jpg') {
+            const imageData = Buffer.from(req.file.path).toString('utf8');
+            fs.unlinkSync(path.join(__dirname, '..', imageData));
+            return res.json({message: "invalid file type"});
+        }
+       
         await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');
 
         await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(externeServiceData), 'image_data_response');
@@ -213,7 +263,7 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
 
   
 app.listen(port, async() => {
-    console.log('Server is up on port ' + port);
+    console.log('TargetService is up on port ' + port);
     if(await connectToRabbitMQ() == false) {
         console.log("RabbitMQ is not connected");
         res.json({message: "RabbitMQ is not connected"});
