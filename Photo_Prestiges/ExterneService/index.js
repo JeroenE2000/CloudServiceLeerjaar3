@@ -13,6 +13,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const mongoose = require('mongoose');
 const multer = require('multer');
+const path = require('path');
 const upload = multer();
 const db = mongoose.connection;
 
@@ -31,6 +32,11 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
     try {
+        if (req.file.mimetype !== 'image/png' && req.file.mimetype !== 'image/jpeg' && req.file.mimetype !== 'image/jpg') {
+            const imageData = Buffer.from(req.file.path).toString('utf8');
+            fs.unlinkSync(path.join(__dirname, '..', imageData));
+            return res.json({message: "invalid file type"});
+        }
         let targetId = req.params.tid;
         const result = await uploadTargetModel.findOne({tid: targetId});
         if(result == null) {
@@ -38,6 +44,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
         }
         const uploadImage = req.file.path;
         const targetImage = Buffer.from(result.image.data).toString('utf8');
+       
         const score = await compareImages(targetImage, uploadImage);
 
         const uploadId = Math.floor(Math.random() * 9000000000) + 1000000000;
@@ -81,6 +88,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
                 },
             } 
         }
+
         await db.collection('uploads').insertOne(uploadData);
         await sendMessageToQueue('ScoreData', JSON.stringify(scoreData), 'score_data');
 

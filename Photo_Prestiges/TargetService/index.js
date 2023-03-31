@@ -199,6 +199,12 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
                 contentType: req.file.mimetype
             }
         }
+        if (req.file.mimetype !== 'image/png' && req.file.mimetype !== 'image/jpeg' && req.file.mimetype !== 'image/jpg') {
+            const imageData = Buffer.from(req.file.path).toString('utf8');
+            fs.unlinkSync(path.join(__dirname, '..', imageData));
+            return res.json({message: "invalid file type"});
+        }
+       
         await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');
 
         await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(externeServiceData), 'image_data_response');
