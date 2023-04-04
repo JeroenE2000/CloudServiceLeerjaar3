@@ -5,7 +5,7 @@ var uploadSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  targetid: {
+  tid: {
     type: Number,
     required: true,
   },
@@ -27,3 +27,4 @@ var uploadSchema = new mongoose.Schema({
 
 mongoose.model('Upload', uploadSchema);
 
+module.exports = mongoose.model('Upload');

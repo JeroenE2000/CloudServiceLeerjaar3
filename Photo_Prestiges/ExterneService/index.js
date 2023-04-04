@@ -175,6 +175,51 @@ app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
 });
 
 
+app.delete('/uploaded/:uid', opaqueTokenCheck, async function(req, res, next) {
+    try {
+        const uploadId = req.params.uid;
+        if (uploadId == null) {
+            return res.json({ message: "tid is not filled in" });
+        }
+        const uid = req.headers['user_id']
+        const oldUploadData = await UploadModel.find({ 'uploadId': uploadId });
+
+        let targetUploadid; 
+        let uploadImage;
+        oldUploadData.forEach((targetData) => {
+            targetUploadid = targetData.tid;
+            uploadImage = targetData.matchingtargets.image.data;
+        });
+
+        const uploadTargets = await uploadTargetModel.find({ 'tid': targetUploadid });
+        let ownerId;
+        uploadTargets.forEach((targetData) => {
+            ownerId = targetData.ownerId;
+        });
+
+        if (ownerId != uid) {
+            return res.json({ message: "Deze target is niet van jouw dus kun je niet uploads verwijderen" });
+        }
+
+        if (oldUploadData == null) {
+            return res.json({ message: "target does not exist or this is not the users target" });
+        }
+        const imageData = Buffer.from(uploadImage).toString('utf8');
+    
+        // //remove image from the targetupload folder
+        fs.unlinkSync(path.join(__dirname, '..', imageData));
+        await sendMessageToQueue('uploadDelete', JSON.stringify({ targetUploadid , uploadId , uid }), 'delete_score_of_upload_of_target');
+        await UploadModel.deleteOne({ 'uploadId': uploadId });
+
+        return res.json({ message: "Succes upload is verwijderd"});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "something went wrong", data: error})
+    }
+});
+
+
+
 // Get all target uploads from uploadtargets table
 app.get('/uploadtarget', opaqueTokenCheck, async function(req, res, next) {
     try {

@@ -63,5 +63,16 @@ app.listen(port, async () => {
         await consumeFromQueue('ScoreData', '', 'score_data', async (data, dbname) => {
             await db.collection('scores').insertOne(data);
         });
+
+        await consumeFromQueue('uploadDelete', '' , 'delete_score_of_upload_of_target', async (data, dbname) => {
+            let targetId = data.targetUploadid;
+            let uploadId = parseInt(data.uploadId);
+            let userId = parseInt(data.uid);
+            const getUserScore = await ScoreModel.find({'uploads.userId': userId , 'uploads.targetId': targetId, 'uploads.uploadId': uploadId});
+            if(getUserScore.length === 0){
+                console.log("Deze target bestaat nog niet of je hebt geen score op deze target");
+            }
+            await ScoreModel.deleteOne({ 'uploads.uploadId': uploadId });            
+        });
     }
 });
