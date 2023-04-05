@@ -40,6 +40,21 @@ app.get('/targets', authMiddleware, checkRole(['user', 'admin']), async (req, re
     }
 });
 
+app.put('/targets/:tid', authMiddleware, checkRole(['user', 'admin']), async (req, res) => {
+    try {
+      const response = await axios.put(targetService + '/targets/' + req.params.tid, req.body, {
+        headers: {
+          opaque_token: process.env.OPAQUE_TOKEN,
+          user_id: req.user.uid
+        }
+      });
+      return res.json(response.data);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 app.delete('/targets/:tid', authMiddleware, checkRole(['user', 'admin']) , async (req, res) => {
     try {
         const response = await axios.delete(targetService + '/targets/' + req.params.tid, {
@@ -130,7 +145,7 @@ app.get('/targets/collectionfilter', authMiddleware, async function(req, res) {
       const response = await axios.get(targetService + '/targets/collectionfilter', {
         headers: {
           opaque_token: process.env.OPAQUE_TOKEN
-          },
+        },
         params: req.query
       });
       return res.json(response.data);

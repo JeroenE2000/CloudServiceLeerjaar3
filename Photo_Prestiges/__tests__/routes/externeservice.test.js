@@ -8,8 +8,8 @@ async function compareImages(targetImage, uploadImage) {
     targetFormdata.append('image', fs.createReadStream(targetImage))
     uploadFormdata.append('image', fs.createReadStream(uploadImage))
 
-    const api_key = "acc_e9bb2fe17869982";
-    const api_secret = "b0249401a86f021a291f14b2d25e9390";
+    const api_key = "acc_9b966df7a565ab9";
+    const api_secret = "4f0acdcdba6a54477a6ef4510d130046";
     const encoded = Buffer.from(api_key + ':' + api_secret, 'utf8').toString('base64')  // encode to base64
 
     const url = "https://api.imagga.com/v2/tags";
