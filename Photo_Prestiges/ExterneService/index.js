@@ -87,7 +87,6 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
 
         return res.json({message: "success", data: score});
     } catch (error) {
-        console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
     }
 });
@@ -169,7 +168,6 @@ app.get('/uploads', opaqueTokenCheck, async function(req, res, next) {
         }
         return res.json({message: "success", data: result});
     } catch (error) {
-        console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
     }
 });
@@ -213,7 +211,6 @@ app.delete('/uploaded/:uid', opaqueTokenCheck, async function(req, res, next) {
 
         return res.json({ message: "Succes upload is verwijderd"});
     } catch (error) {
-        console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
     }
 });
@@ -231,7 +228,6 @@ app.get('/uploadtarget', opaqueTokenCheck, async function(req, res, next) {
 
         return res.json({message: "Dit zijn alle targetId's die momenteel geupload zijn waarmee je kan vergelijken", data: tids});
     } catch (error) {
-        console.log(error);
         return res.status(500).json({message: "something went wrong", data: error})
     }
 });
