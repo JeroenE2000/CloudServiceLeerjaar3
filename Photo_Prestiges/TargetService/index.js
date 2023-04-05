@@ -210,6 +210,42 @@ app.delete('/admin/targets/:tid', opaqueTokenCheck, async function(req, res) {
 // ------------- End of Admin Functions -----------------
 
 
+app.put('/targets/:tid', opaqueTokenCheck, async function(req, res, next) {
+    const tid = req.params.tid;
+    if (tid == null) {
+        return res.json({ message: "tid is not filled in" });
+    }
+
+    const findtarget = await TargetModel.findOne({ 'tid': tid });
+    if (findtarget == null) {
+        return res.json({ message: "target does not exist" });
+    }
+
+    const uid = req.headers['user_id'];
+    if (findtarget.uid != uid) {
+        return res.json({ message: "this is not the users target" });
+    }
+
+    try {
+        const update = {};
+        const requestBody = req.body;
+        const fieldsToUpdate = ['targetName', 'description'];
+        for (const field of fieldsToUpdate) {
+            if (requestBody.hasOwnProperty(field)) {
+                update[field] = requestBody[field];
+            } else {
+                update[field] = findtarget[field];
+            }
+        }
+        await TargetModel.updateOne({ 'tid': tid }, update);
+        return res.json({ message: "target updated" });
+    } catch (err) {
+        console.error(err);
+        return res.json({ message: "an error occurred while updating the target" });
+    }
+});
+
+
 
 //make a post request to the database to add a target
 app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(req, res, next) {
