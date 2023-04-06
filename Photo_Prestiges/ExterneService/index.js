@@ -83,7 +83,7 @@ app.post('/compareUpload/:tid', opaqueTokenCheck, upload.single('image'), async 
         }
 
         await db.collection('uploads').insertOne(uploadData);
-        await sendMessageToQueue('ScoreData', JSON.stringify(scoreData), 'score_data');
+        await sendMessageToQueue('ScoreData', JSON.stringify(scoreData));
 
         return res.json({message: "success", data: score});
     } catch (error) {
@@ -97,8 +97,8 @@ async function compareImages(targetImage, uploadImage) {
     targetFormdata.append('image', fs.createReadStream(targetImage))
     uploadFormdata.append('image', fs.createReadStream(uploadImage))
 
-    const api_key = "acc_9b966df7a565ab9";
-    const api_secret = "4f0acdcdba6a54477a6ef4510d130046";
+    const api_key = process.env.API_KEY;
+    const api_secret = process.env.API_SECRET;
     const encoded = Buffer.from(api_key + ':' + api_secret, 'utf8').toString('base64')  // encode to base64
 
     const url = "https://api.imagga.com/v2/tags";
@@ -189,12 +189,11 @@ app.delete('/uploaded/:uid', opaqueTokenCheck, async function(req, res, next) {
             uploadImage = targetData.matchingtargets.image.data;
         });
 
-        const uploadTargets = await uploadTargetModel.find({ 'tid': targetUploadid });
+        const uploadTargets = await uploadTargetModel.find({'tid': targetUploadid });
         let ownerId;
         uploadTargets.forEach((targetData) => {
             ownerId = targetData.ownerId;
         });
-
         if (ownerId != uid) {
             return res.json({ message: "Deze target is niet van jouw dus kun je niet uploads verwijderen" });
         }
@@ -206,8 +205,8 @@ app.delete('/uploaded/:uid', opaqueTokenCheck, async function(req, res, next) {
     
         // //remove image from the targetupload folder
         fs.unlinkSync(path.join(__dirname, '..', imageData));
-        await sendMessageToQueue('uploadDelete', JSON.stringify({ targetUploadid , uploadId , uid }), 'delete_score_of_upload_of_target');
-        await UploadModel.deleteOne({ 'uploadId': uploadId });
+        await sendMessageToQueue('uploadDelete', JSON.stringify({ targetUploadid , uploadId , uid }));
+        await UploadModel.deleteOne({'uploadId': uploadId });
 
         return res.json({ message: "Succes upload is verwijderd"});
     } catch (error) {
@@ -243,7 +242,7 @@ app.listen(port, async() => {
     } else {
         await connectToRabbitMQ();
     
-        await consumeFromQueue('imageDataResponseQueue', '', 'image_data_response', async (data, dbname) => {
+        await consumeFromQueue('imageDataResponseQueue', '',async (data, dbname) => {
             await db.collection('uploadtargets').insertOne(data);
         });
     

@@ -75,7 +75,7 @@ app.listen(port, async() => {
         await connectToRabbitMQ();
         // dit zorgt ervoor dat de target aan een user wordt toegevoegd hij pakt de UserTargetQueue en roept daarbij de users collection aan om 
         // de targetID toe te voegen aan de user
-        await consumeFromQueue("UserTargetQueue", "users", "get_user_target", async (data, dbname) => {
+        await consumeFromQueue("UserTargetQueue", "users", async (data, dbname) => {
             let findUser = await User.findOne({ uid: data.uid });
             if(findUser != null) {
                 const targetIDArray = [data.targetID];

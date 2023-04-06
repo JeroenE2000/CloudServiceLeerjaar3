@@ -60,11 +60,11 @@ app.listen(port, async () => {
     } else {
         await connectToRabbitMQ();
         
-        await consumeFromQueue('ScoreData', '', 'score_data', async (data, dbname) => {
+        await consumeFromQueue('ScoreData', '', async (data, dbname) => {
             await db.collection('scores').insertOne(data);
         });
 
-        await consumeFromQueue('uploadDelete', '' , 'delete_score_of_upload_of_target', async (data, dbname) => {
+        await consumeFromQueue('uploadDelete', '', async (data, dbname) => {
             let targetId = data.targetUploadid;
             let uploadId = parseInt(data.uploadId);
             let userId = parseInt(data.uid);

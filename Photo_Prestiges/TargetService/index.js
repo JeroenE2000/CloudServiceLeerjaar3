@@ -254,10 +254,10 @@ app.post('/targets', opaqueTokenCheck, upload.single('image'), async function(re
             return res.json({message: "invalid file type"});
         }
        
-        await sendMessageToQueue('targetQueue', JSON.stringify(data), 'get_target');
+        await sendMessageToQueue('targetQueue', JSON.stringify(data));
 
-        await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(externeServiceData), 'image_data_response');
-        await sendMessageToQueue('UserTargetQueue', JSON.stringify(userdata), 'get_user_target');
+        await sendMessageToQueue('imageDataResponseQueue', JSON.stringify(externeServiceData));
+        await sendMessageToQueue('UserTargetQueue', JSON.stringify(userdata));
 
         return res.json({message: "success"});
     } catch (error) {
@@ -276,7 +276,7 @@ app.listen(port, async() => {
     else {
         await connectToRabbitMQ();
 
-        await consumeFromQueue("targetQueue", "targets", 'get_target', async (data, dbname) => {
+        await consumeFromQueue("targetQueue", "targets", async (data, dbname) => {
             console.log("Uploaded the following data to targets: ", data);
             await db.collection('targets').insertOne(data);
         });

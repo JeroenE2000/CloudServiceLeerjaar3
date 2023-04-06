@@ -16,14 +16,14 @@ async function connectToRabbitMQ() {
   return isConnected;
 }
 
-async function sendMessageToQueue(queueName, message, routingKey) {
+async function sendMessageToQueue(queueName, message) {
   if (!isConnected) {
     throw new Error("RabbitMQ connection is not established.");
   }
   try {
     const channel = await rabbitmqconnection.createChannel();
-    await channel.assertExchange(queueName, 'fanout', { durable: true });
-    await channel.publish(queueName, routingKey, Buffer.from(message));
+    await channel.assertQueue(queueName);
+    await channel.sendToQueue(queueName, Buffer.from(message));
     return Promise.resolve();
   } catch (error) {
     console.log(error);
@@ -31,23 +31,21 @@ async function sendMessageToQueue(queueName, message, routingKey) {
   }
 }
 
-async function consumeFromQueue(queueName, dbname, routingKey, callback) {
+async function consumeFromQueue(queueName, dbname, callback) {
   if (!isConnected) {
-    throw new Error("RabbitMQ connection is not established.");
+      throw new Error("RabbitMQ connection is not established.");
   } else {
-    try {
-      const channel = await rabbitmqconnection.createChannel();
-      const assertQueue = await channel.assertQueue(routingKey, { exclusive: false, durable: true });
-      await channel.assertExchange(queueName, 'fanout', { durable: true });
-      await channel.bindQueue(assertQueue.queue, queueName, routingKey);
-      channel.consume(assertQueue.queue, async (msg) => {
-        const data = JSON.parse(msg.content.toString());
-        await callback(data, dbname);
-        console.log(`Received message from ${queueName} with routing key ${routingKey}: ${msg.content.toString()}`);
-      }, { noAck: true });
-    } catch (error) {
-      return Promise.reject(error);
-    }
+      try {
+          const channel = await rabbitmqconnection.createChannel();
+          await channel.assertQueue(queueName, { durable: true });
+          channel.consume(queueName, async (msg) => {
+              const data = JSON.parse(msg.content.toString());
+              await callback(data, dbname);
+              console.log(`Received message from ${queueName}: ${msg.content.toString()}`);
+          }, { noAck: true });
+      } catch (error) {
+          return Promise.reject(error);
+      }
   }
 }
 
