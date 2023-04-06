@@ -293,7 +293,11 @@ app.get('/scores/myscore/:tid', authMiddleware, checkRole(['user', 'admin']), as
 // ----------------- AuthenticationService Begining -----------------
 app.post('/login', async (req, res) => {
     try {
-      const response = await axios.post(authenticationService + '/login', req.body);
+      const response = await axios.post(authenticationService + '/login', req.body, {
+        headers: {
+          opaque_token: process.env.OPAQUE_TOKEN
+        }
+      });
       return res.json(response.data);
     } catch (error) {
       console.error(error);
@@ -303,7 +307,11 @@ app.post('/login', async (req, res) => {
   
 app.post('/register', async (req, res) => {
     try {
-      const response = await axios.post(authenticationService + '/register', req.body);
+      const response = await axios.post(authenticationService + '/register', req.body, {
+        headers: {
+          opaque_token: process.env.OPAQUE_TOKEN
+        }
+      });
       return res.json(response.data);
     } catch (error) {
       console.error(error);

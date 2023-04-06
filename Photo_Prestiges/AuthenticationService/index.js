@@ -10,6 +10,7 @@ var passportJWT = require("passport-jwt");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('./Models/User');
+const { opaqueTokenCheck } = require('../Middleware/roles');
 const db = mongoose.connection;
 
 require('./mongooseconnection');
@@ -20,7 +21,7 @@ var jwtOptions = { jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), sec
 
 app.use(express.json());
 
-app.post('/login', async function(req, res) {
+app.post('/login', opaqueTokenCheck, async function(req, res) {
     const { username, password } = req.body;
     let findUser = await User.findOne({username: username})
 
@@ -34,7 +35,7 @@ app.post('/login', async function(req, res) {
 });
 
 
-app.post('/register', async function(req, res) {
+app.post('/register', opaqueTokenCheck, async function(req, res) {
     let user = await db.collection('users');
     const { username, password, email, role, uid } = req.body;
     if (!username || !password) {
