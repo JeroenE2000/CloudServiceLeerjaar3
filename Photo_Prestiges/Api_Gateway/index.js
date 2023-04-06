@@ -126,9 +126,9 @@ app.get('/targets/coordinates/:lat/:long', authMiddleware, async function(req, r
     }
 });
 
-app.get('/targets/city/:city', authMiddleware, async function(req, res) {
+app.get('/targetscityfilter/city/:city', authMiddleware, async function(req, res) {
     try {
-        const response = await axios.get(targetService + '/targets/city/' + req.params.city, {
+        const response = await axios.get(targetService + '/targetscityfilter/city/' + req.params.city, {
             headers: {
               opaque_token: process.env.OPAQUE_TOKEN
             }
