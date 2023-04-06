@@ -31,24 +31,6 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 
-let targets;
-let target_city_filter;
-let target_coordinates_filter;
-
-// ----------- start consumer functions for rabbitmq -----------------
-async function getTargets(skip, perPage) {
-    return await db.collection('targets').find().skip(skip).limit(perPage).toArray();
-}
-
-async function getTargetsByCoordinates(lat, long) {
-    return await TargetModel.find({'location.coordinates': [long, lat]});
-}
-
-async function getTargetsByCity(city) {
-    return await TargetModel.find({ 'location.placename': city });
-}
-// ----------- end of the cunsumer functions for rabbitmq -----------------
-
 // make a GET request to the database to get all the targets
 app.get('/targets', opaqueTokenCheck, async function(req, res) {
     let { page, perPage } = req.query;
@@ -69,10 +51,7 @@ app.get('/targets', opaqueTokenCheck, async function(req, res) {
     page = parseInt(page);
     perPage = parseInt(perPage);
     const skip = (page - 1) * perPage;
-    await sendMessageToQueue('getAllTargets', JSON.stringify({ skip , perPage }), 'get_all_targets');
-    while (!targets) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    const targets = await db.collection('targets').find().skip(skip).limit(perPage).toArray();
     return res.json({
       message: "success",
       data: targets,
@@ -98,12 +77,10 @@ app.get('/targets/collectionfilter', opaqueTokenCheck, async function(req, res) 
     for(const [queryParam, field] of Object.entries(queryParamMap)) {
         if(req.query[queryParam]) {
             query[field] = req.query[queryParam];
-           
         }
     }
-    console.log({query: query});
     const targets = await db.collection('targets').find(query).toArray();
-    res.send(targets);
+    return res.json({message: "success", data: targets});
 });
 
 app.get('/targets/:tid/:field', opaqueTokenCheck, async function(req, res) {
@@ -124,17 +101,13 @@ app.get('/targets/:tid/:field', opaqueTokenCheck, async function(req, res) {
 });
 
 // Route to get all targets by city
-app.get('/targets/city/:city', opaqueTokenCheck, async function(req, res) {
+app.get('/targetscityfilter/city/:city', opaqueTokenCheck, async function(req, res) {
     let city = req.params.city;
-
     //check if city is filled in
     if(city == null) {
        return res.json({message: "city is not filled in"});
     }
-    await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ city }), 'filter_by_city');
-    while (!target_city_filter) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    const target_city_filter = await TargetModel.find({ 'location.placename': city });
     return res.json({message: "success", data: target_city_filter});
 });
 
@@ -147,11 +120,7 @@ app.get('/targets/coordinates/:lat/:long', opaqueTokenCheck, async function(req,
     if(lat == null || long == null) {
        return res.json({message: "lat and long are not filled in"});
     }
-    await sendMessageToDirectExchange('targetFilterExchange', JSON.stringify({ long, lat }), 'filter_by_coordinates');
-
-    while (!target_coordinates_filter) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    const target_coordinates_filter = await TargetModel.find({'location.coordinates': [long, lat]});
     
     return res.json({message: "success", data: target_coordinates_filter});
 });
@@ -306,22 +275,10 @@ app.listen(port, async() => {
     } 
     else {
         await connectToRabbitMQ();
-        await consumeFromQueue("getAllTargets", "targets", 'get_all_targets', async (data, dbname) => {
-            console.log("Get all targets from page : ", data);
-            targets = await getTargets(data.skip, data.perPage);
-        });
 
         await consumeFromQueue("targetQueue", "targets", 'get_target', async (data, dbname) => {
             console.log("Uploaded the following data to targets: ", data);
             await db.collection('targets').insertOne(data);
-        });
-        await consumeFromDirectExchange('targetFilterExchange', 'targets', 'filter_by_city', async function(data, dbname) {
-            console.log("Filtered the following data by city: ", data)
-            target_city_filter = await getTargetsByCity(data.city);
-        });
-        await consumeFromDirectExchange('targetFilterExchange', 'targets', 'filter_by_coordinates', async function(data, dbname) {
-            console.log("Filtered the following data by coordinates: ", data)
-            target_coordinates_filter = await getTargetsByCoordinates(data.lat, data.long);
         });
     }   
 });
