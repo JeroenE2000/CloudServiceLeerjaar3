@@ -33,14 +33,14 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 // make a GET request to the database to get all the targets
 app.get('/targets', opaqueTokenCheck, async function(req, res) {
-    let { page, perPage } = req.query;
+    let { page, perpage } = req.query;
     
-    if (!page && perPage) {
+    if (!page && perpage) {
         page = 1;
-    } else if (page && !perPage) {
-        perPage = 2;
+    } else if (page && !perpage) {
+        perpage = 2;
     }
-    if (!page || !perPage) {
+    if (!page || !perpage) {
       const targets = await db.collection('targets').find().toArray();
       return res.json({
         message: "success",
@@ -49,14 +49,14 @@ app.get('/targets', opaqueTokenCheck, async function(req, res) {
     }
   
     page = parseInt(page);
-    perPage = parseInt(perPage);
-    const skip = (page - 1) * perPage;
-    const targets = await db.collection('targets').find().skip(skip).limit(perPage).toArray();
+    perpage = parseInt(perpage);
+    const skip = (page - 1) * perpage;
+    const targets = await db.collection('targets').find().skip(skip).limit(perpage).toArray();
     return res.json({
       message: "success",
       data: targets,
       page,
-      perPage
+      perpage
     });
 });
 
