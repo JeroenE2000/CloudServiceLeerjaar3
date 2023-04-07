@@ -1,6 +1,6 @@
 const amqp = require('amqplib');
 require('dotenv').config();
-const uri = 'amqp://127.0.0.1:5672';
+const uri = process.env.RABBITMQ_CONNECTION;
 let rabbitmqconnection = null;
 let isConnected = false;
 
