@@ -8,9 +8,8 @@ let db;
 async function createNewTarget(req) {
   // Check if file is present and is an image
   const buffer = req.file.buffer;
-  const tid = Math.floor(Math.random() * 9000000000) + 1000000000; // generates a 10-digit random number
   const data = {
-    tid: tid,
+    tid: req.body.tid,
     targetName: req.body.targetName,
     description: req.body.description,
     location: {
